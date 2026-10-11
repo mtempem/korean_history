@@ -5,5 +5,4 @@
 window.HQ_CONFIG = {
   supabaseUrl: 'https://chugiaapralopactxzum.supabase.co',
   supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNodWdpYWFwcmFsb3BhY3R4enVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MjY4NDYsImV4cCI6MjEwNzMwMjg0Nn0.xD0B9UINg2pEs0KHLniG6tCH49oU38AxCqLhsJbZ_J8',  // 예: 'eyJhbGciOi...'
-  google: false,        // 대시보드에서 Google 로그인을 켰다면 true
 };

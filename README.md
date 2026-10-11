@@ -40,10 +40,15 @@
 2. 대시보드 **SQL Editor**에 `supabase/schema.sql` 내용을 붙여 넣고 Run. → `progress` 테이블과 "자기 기록만 읽고 쓰기" 보안 규칙이 만들어진다.
 3. **Authentication > URL Configuration**: Site URL은 `https://mtempem.github.io/korean_history/`, Redirect URLs에는 `https://mtempem.github.io/korean_history/**`와 `http://localhost:8765/**`를 넣는다.
 4. **Project Settings > API**의 Project URL과 `anon` public 키를 `config.js`에 넣는다. `service_role` 키는 절대 넣지 말 것.
-5. (선택) Google 로그인: **Authentication > Providers > Google**을 켜고 `config.js`의 `google`을 `true`로.
+5. Google 로그인 켜기
+   - [Google Cloud Console](https://console.cloud.google.com/)에서 프로젝트를 만들고 **OAuth 동의 화면**(외부, 앱 이름·지원 이메일)을 설정한다.
+   - **사용자 인증 정보 > OAuth 클라이언트 ID**(웹 애플리케이션)를 만든다.
+     - 승인된 JavaScript 원본: `https://mtempem.github.io`, `http://localhost:8765`
+     - 승인된 리디렉션 URI: `https://chugiaapralopactxzum.supabase.co/auth/v1/callback`
+   - 받은 클라이언트 ID·보안 비밀을 Supabase **Authentication > Sign In / Providers > Google**에 넣고 켠다.
 
-- 이메일 로그인은 메일로 온 링크를 누르는 방식이라 비밀번호가 필요 없다.
-- 로그인은 웹 주소(http/https)로 열었을 때만 된다. `index.html` 파일을 더블클릭해 연 경우(`file://`)에는 지금처럼 브라우저에만 저장된다.
+- 로그인은 Google 계정으로만 한다. 한 번 로그인하면 그 브라우저에서는 로그아웃 전까지 유지된다.
+- 로그인은 웹 주소(http/https)로 열었을 때만 된다. `index.html` 파일을 더블클릭해 연 경우(`file://`)에는 브라우저에만 저장된다.
 - 무료 프로젝트는 일주일가량 사용이 없으면 일시 정지된다. 대시보드에서 다시 켜면 된다.
 - claude.ai 아티팩트는 외부 서버 접속을 막으므로 Supabase 동기화는 직접 호스팅한 사이트에서만 동작한다.
 

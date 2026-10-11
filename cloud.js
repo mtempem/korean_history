@@ -105,30 +105,21 @@ window.HQCloud = (() => {
           <li>${ck}문제별 필기 보관</li>
           <li>${ck}지금까지 푼 기록도 함께 저장</li>
         </ul>
-        <form id="acct-form">
-          <p class="modal-note">비밀번호 없이, 메일로 받은 링크를 누르면 로그인돼요.</p>
-          <input id="acct-email" type="email" required autocomplete="email" placeholder="example@gmail.com" aria-label="이메일 주소">
-          <button type="submit" class="acct-primary">로그인 링크 받기</button>
-          ${cfg.google ? '<button type="button" class="acct-google" id="acct-google">Google로 계속하기</button>' : ''}
-          <p class="acct-msg" id="acct-msg" role="status"></p>
-        </form>
+        <button type="button" class="acct-google" id="acct-google"><svg class="g-logo" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg><span>Google로 계속하기</span></button>
+        <p class="acct-msg" id="acct-msg" role="status"></p>
       </div>`;
     document.body.append(m);
     const close = () => { m.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = e => { if (e.key === 'Escape') close(); };
     document.addEventListener('keydown', onKey);
     m.addEventListener('click', e => { if (e.target === m || e.target.closest('.modal-x')) close(); });
-    const form = m.querySelector('#acct-form');
-    form.querySelector('input').focus();
-    form.onsubmit = async e => {
-      e.preventDefault();
-      const msg = form.querySelector('#acct-msg'), email = form.querySelector('#acct-email').value.trim();
-      msg.textContent = '보내는 중…';
-      const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
-      msg.textContent = error ? '보내지 못했어요: ' + error.message : email + ' 로 로그인 링크를 보냈어요. 메일의 링크를 누르면 로그인돼요.';
+    const g = m.querySelector('#acct-google');
+    g.focus();
+    g.onclick = async () => {
+      g.disabled = true;
+      const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
+      if (error) { g.disabled = false; m.querySelector('#acct-msg').textContent = 'Google 로그인을 시작하지 못했어요: ' + error.message; }
     };
-    const g = form.querySelector('#acct-google');
-    if (g) g.onclick = () => sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
   }
 
   function loadLib() {
