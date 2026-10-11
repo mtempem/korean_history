@@ -95,26 +95,24 @@ window.HQCloud = (() => {
     if (document.getElementById('login-modal')) return;
     const m = document.createElement('div');
     m.className = 'modal'; m.id = 'login-modal';
+    const ck = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>';
     m.innerHTML = `<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="login-title">
         <button class="modal-x" aria-label="닫기">×</button>
         <h2 id="login-title">풀이 기록 저장하기</h2>
-        <p class="modal-lead">이메일로 로그인하면 지금 이 브라우저에만 남는 기록을 계정에 저장해요.</p>
+        <p class="modal-lead">로그인하면 어느 기기에서든 이어서 풀 수 있어요.</p>
         <ul class="modal-list">
-          <li><b>폰·PC 어디서나 이어 풀기</b> 같은 이메일로 로그인하면 고른 답과 채점 결과가 그대로 보여요.</li>
-          <li><b>필기 보관</b> 문제마다 쓴 메모가 계정에 저장돼요.</li>
-          <li><b>기록이 사라지지 않아요</b> 브라우저 데이터를 지우거나 기기를 바꿔도 남아 있어요.</li>
-          <li><b>지금까지 한 것도 함께</b> 로그인 전에 풀고 쓴 기록은 첫 로그인 때 자동으로 옮겨져요.</li>
+          <li>${ck}폰·PC에서 이어 풀기</li>
+          <li>${ck}문제별 필기 보관</li>
+          <li>${ck}브라우저를 지워도 기록 유지</li>
+          <li>${ck}지금까지 푼 기록도 함께 저장</li>
         </ul>
         <form id="acct-form">
-          <label for="acct-email">이메일</label>
-          <div class="modal-row">
-            <input id="acct-email" type="email" required autocomplete="email" placeholder="you@example.com">
-            <button type="submit" class="acct-primary">로그인 링크 받기</button>
-          </div>
-          ${cfg.google ? '<button type="button" class="acct-google" id="acct-google">Google로 로그인</button>' : ''}
+          <input id="acct-email" type="email" required autocomplete="email" placeholder="이메일 주소" aria-label="이메일">
+          <button type="submit" class="acct-primary">로그인 링크 받기</button>
+          ${cfg.google ? '<button type="button" class="acct-google" id="acct-google">Google로 계속하기</button>' : ''}
           <p class="acct-msg" id="acct-msg" role="status"></p>
-          <p class="modal-note">비밀번호는 필요 없어요. 메일로 온 링크를 누르면 로그인돼요. 기록은 본인만 볼 수 있어요.</p>
         </form>
+        <p class="modal-note">비밀번호 없이, 메일로 받은 링크를 누르면 로그인돼요.</p>
       </div>`;
     document.body.append(m);
     const close = () => { m.remove(); document.removeEventListener('keydown', onKey); };
