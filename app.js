@@ -80,17 +80,17 @@
         <button data-m="review" aria-pressed="${state.mode === 'review'}">해설</button>
       </div>
       <span class="score" id="score"></span>
-      <button class="linkbtn" id="reset">답안 지우기</button>
-      <span class="memo-tools">
-        <button class="linkbtn" id="onlynotes" aria-pressed="${!!state.onlyNotes}">${state.onlyNotes ? '전체 문항 보기' : '필기한 문항만'}</button>
+      <span class="tb-right">
+        <label class="switch"><input type="checkbox" id="onlynotes" role="switch"${state.onlyNotes ? ' checked' : ''}><span class="switch-ui" aria-hidden="true"></span>필기한 문항만</label>
+        <button class="tb-btn" id="reset">풀이 초기화</button>
+      </span>
+      <!-- 필기 내보내기/불러오기: 위치를 정할 때까지 숨겨 둔다 -->
+      <span class="memo-tools" hidden>
         <button class="linkbtn" id="nexport">필기 내보내기</button>
         <label class="linkbtn" for="nimport">필기 불러오기</label><input type="file" id="nimport" accept="application/json" hidden>
       </span>
     </div>`);
     col.append(tb);
-    col.append(el(`<p class="hint" style="margin:-8px 0 14px">${state.mode === 'solve'
-      ? '선지를 눌러 답을 고르고, 문제 왼쪽 위의 번호를 누르면 그 문제만 채점됩니다. 오른쪽 아래 「채점하기」는 회차 전체를 채점합니다. 채점한 뒤 선지를 누르면 해설이 열립니다.'
-      : '모든 문항의 정답과 해설이 펼쳐져 있습니다. 선지를 누르면 해설을 접거나 펼 수 있습니다.'}</p>`));
     const nav = el('<div class="qnav" aria-label="문항 이동"></div>');
     col.append(nav);
 
@@ -107,7 +107,15 @@
       const b = e.target.closest('button'); if (!b) return;
       state.mode = b.dataset.m; store.set('mode', state.mode); renderRound();
     });
-    tb.querySelector('#reset').addEventListener('click', () => {
+    // 실수로 누르는 것을 막기 위해 한 번 더 눌러야 초기화된다
+    const rb = tb.querySelector('#reset'); let armed;
+    rb.addEventListener('click', () => {
+      if (!armed) {
+        rb.textContent = '한 번 더 누르면 초기화'; rb.classList.add('armed');
+        armed = setTimeout(() => { armed = null; rb.textContent = '풀이 초기화'; rb.classList.remove('armed'); }, 3000);
+        return;
+      }
+      clearTimeout(armed); armed = null;
       store.set(answersKey(state.round), {}); store.set(gradedKey(state.round), {}); renderRound();
     });
     if (state.mode === 'solve') col.append(el('<button class="grade-all" id="gradeall">채점하기</button>'));
@@ -117,7 +125,7 @@
       store.set(gradedKey(state.round), g);
       const y = window.scrollY; renderRound(); window.scrollTo(0, y);
     });
-    tb.querySelector('#onlynotes').addEventListener('click', () => { state.onlyNotes = !state.onlyNotes; renderRound(); });
+    tb.querySelector('#onlynotes').addEventListener('change', e => { state.onlyNotes = e.target.checked; renderRound(); });
     tb.querySelector('#nexport').addEventListener('click', () => {
       const blob = new Blob([JSON.stringify(notes.all(), null, 1)], { type: 'application/json' });
       const a = document.createElement('a');
@@ -400,12 +408,12 @@
         html += tx.length ? textList(tx, true) : (ph.length ? '' : '<div class="empty">해당하는 선지가 없습니다.</div>');
       } else if (state.country === GALLERY) {
         const ph = index.filter(it => it.photo);
-        html = `<div class="chead"><h2>문화유산 갤러리</h2><p>사진·그림 선지 ${ph.length}점 · 사진을 누르면 해설이 열립니다</p></div>`;
+        html = `<div class="chead"><h2>문화유산 갤러리</h2><p>사진·그림 선지 ${ph.length}점</p></div>`;
         html += COUNTRIES.map(c => { const arr = ph.filter(it => it.c === c); return arr.length ? `<div class="grp"><h3>${c}<span>${arr.length}점</span></h3>${galleryHTML(arr)}</div>` : ''; }).join('');
       } else {
         const all = index.filter(it => it.c === state.country);
         const ph = all.filter(it => it.photo), tx = all.filter(it => !it.photo);
-        html = `<div class="chead"><h2>${esc(state.country)}</h2><p>개념 ${tx.length}개${ph.length ? ` · 사진 ${ph.length}점` : ''} · 같은 개념의 선지는 하나로 묶고 출제 횟수(×N)로 표시</p></div>`;
+        html = `<div class="chead"><h2>${esc(state.country)}</h2><p>개념 ${tx.length}개${ph.length ? ` · 사진 ${ph.length}점` : ''}</p></div>`;
         if (ph.length) html += `<div class="grp"><h3>문화유산 사진<span>${ph.length}점</span></h3>${galleryHTML(ph)}</div>`;
         html += tx.length ? textList(tx, false) : '';
       }
