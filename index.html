@@ -125,7 +125,7 @@ main{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
   box-shadow:0 1px 1px rgba(0,0,0,.06),0 8px 16px -10px rgba(60,45,0,.45)}
 .memo-ta::placeholder{color:var(--memo-ink);opacity:.45}
 .memo.open .memo-ta{display:block}
-.memo-ta:focus{outline:none;box-shadow:0 0 0 2px var(--accent),0 8px 16px -10px rgba(60,45,0,.45)}
+.memo-ta:focus{outline:none}
 @media (min-width:1000px){
   main{max-width:none}
   .cview{max-width:1048px;margin:0 auto}
@@ -265,6 +265,11 @@ main{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
 .ph.open{grid-column:span 2}
 
 @media (max-width:760px){
+  /* 모바일 상단: 로고와 저장하기를 한 줄에, 메뉴 토글은 아래 줄 가운데 */
+  .bar{display:grid;grid-template-columns:1fr auto;grid-template-areas:"brand acct" "tabs tabs";row-gap:10px;column-gap:12px}
+  .brand{grid-area:brand;margin:0;align-self:center}
+  .acct{grid-area:acct}
+  .tabs{grid-area:tabs;justify-self:center}
   .cview{grid-template-columns:minmax(0,1fr);gap:12px}
   .clist{display:none}
   .mcsel{display:block;width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);font:inherit}
