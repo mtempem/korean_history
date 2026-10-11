@@ -142,6 +142,7 @@
         store.set('notes', cur); renderRound();
       } catch { alertBar('필기 파일을 읽지 못했습니다. 내보내기로 만든 .json 파일인지 확인해 주세요.'); }
     });
+    watchCurrent();
     const curBtn = col.querySelector(`.rounds button[data-r="${state.round}"]`);
     curBtn && curBtn.scrollIntoView({ block: 'nearest', inline: 'center' });
     updateScore();
@@ -206,7 +207,6 @@
         notes.set(state.round, q.n, ta.value);
         box.classList.toggle('has', has);
         mb.querySelector('.memo-state').textContent = has ? '보기' : '쓰기';
-        markNote(q.n, has);
       }, 300);
     });
     mb.addEventListener('click', () => {
@@ -247,12 +247,22 @@
     return card;
   }
 
-  function markNote(n, on) {
-    const b = app.querySelector(`.qnav button[data-n="${n}"]`); b && b.classList.toggle('noted', on);
-  }
   function alertBar(msg) {
     const b = el(`<div class="toast" role="status">${esc(msg)}</div>`);
     document.body.append(b); setTimeout(() => b.remove(), 4000);
+  }
+
+  // 화면 위쪽에 걸친 문항을 번호판에 '지금 보는 문항'으로 표시
+  let curQ = 0, spy;
+  function watchCurrent() {
+    spy && spy.disconnect();
+    spy = new IntersectionObserver(es => {
+      for (const e of es) if (e.isIntersecting) {
+        curQ = +e.target.id.slice(1);
+        app.querySelectorAll('.qnav button').forEach(b => b.classList.toggle('cur', +b.dataset.n === curQ));
+      }
+    }, { rootMargin: '-35% 0px -60% 0px' });
+    app.querySelectorAll('.q').forEach(c => spy.observe(c));
   }
 
   function updateScore() {
@@ -261,16 +271,17 @@
     const graded = state.mode === 'review' ? {} : store.get(gradedKey(state.round), {});
     let got = 0, nGraded = 0, right = 0, picked = 0;
     const nav = app.querySelector('.qnav');
-    nav.innerHTML = ex.questions.map(q => {
+    const cells = ex.questions.map(q => {
       const p = picks[q.n]; let cls = '';
       if (p != null) picked++;
       if (graded[q.n]) {
         nGraded++;
         if (p != null && isCorrect(q, p)) { right++; got += q.pt || 0; cls = 'ok'; } else cls = 'bad';
       } else if (p != null) cls = 'picked';
-      if (notes.get(state.round, q.n)) cls += ' noted';
-      return `<button class="${cls}" data-n="${q.n}">${q.n}</button>`;
+      if (q.n === curQ) cls += ' cur';
+      return `<button class="${cls}" data-n="${q.n}" aria-label="${q.n}번으로 이동">${q.n}</button>`;
     }).join('');
+    nav.innerHTML = `<div class="qnav-head"><span>${ex.round}회</span><span class="qnav-prog">${picked}<i>/</i>${ex.questions.length}</span></div><div class="qnav-grid">${cells}</div>`;
     nav.onclick = e => { const b = e.target.closest('button'); const t = b && document.getElementById('q' + b.dataset.n); t && t.scrollIntoView({ behavior: 'smooth' }); };
     const s = app.querySelector('#score');
     if (state.mode === 'review') s.textContent = '';

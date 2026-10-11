@@ -64,11 +64,16 @@ main{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
 .score b{color:var(--fg);font-size:15px}
 .linkbtn{font-size:13px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
 
-.qnav{display:grid;grid-template-columns:repeat(auto-fill,minmax(32px,1fr));gap:4px;margin-bottom:20px}
-.qnav button{height:28px;border-radius:5px;font-size:12px;background:var(--surface);border:1px solid var(--line);font-variant-numeric:tabular-nums;max-width:100%}
-.qnav .ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
-.qnav .picked{border-color:var(--fg);font-weight:700}
-.qnav .bad{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+/* 번호판: 테두리 없는 칩, 상태는 배경색으로 */
+.qnav{margin-bottom:20px}
+.qnav-head{display:none}
+.qnav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(32px,1fr));gap:4px}
+.qnav button{height:30px;border-radius:8px;font-size:12px;font-weight:500;color:var(--muted);background:var(--surface);font-variant-numeric:tabular-nums;max-width:100%;transition:background .12s,color .12s}
+.qnav button:not(.picked,.ok,.bad):hover{background:var(--accent-soft);color:var(--accent)}
+.qnav .picked{background:var(--fg);color:var(--bg);font-weight:700}
+.qnav .ok{background:var(--ok-soft);color:var(--ok);font-weight:700}
+.qnav .bad{background:var(--bad-soft);color:var(--bad);font-weight:700}
+.qnav .cur{box-shadow:inset 0 0 0 1.5px var(--accent)}
 
 /* 문항 */
 .q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 10px;margin-bottom:18px;scroll-margin-top:120px}
@@ -127,8 +132,14 @@ main{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
   /* 번호판: 왼쪽 가운데 높이에 떠 있는 5열×10줄 패널 */
   /* 문항·메모(1048px)는 화면 가운데, 번호판(178px)은 그 왼쪽 여백의 가운데에 둔다 */
   .qnav{position:fixed;z-index:12;left:max(19px,calc(25vw - 351px));top:50%;transform:translateY(-50%);margin:0;
-    grid-template-columns:repeat(5,28px);gap:4px;padding:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px -14px rgba(0,0,0,.35)}
-  .qnav button{width:28px;height:26px;font-size:11.5px}
+    width:178px;padding:12px 12px 14px;background:var(--surface);border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.05),0 10px 30px -16px rgba(30,40,70,.35)}
+  .qnav-head{display:flex;justify-content:space-between;align-items:baseline;padding:0 2px 10px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+  .qnav-head span:first-child{font-family:var(--display);font-size:18px}
+  .qnav-prog{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .qnav-prog i{font-style:normal;margin:0 2px;opacity:.5}
+  .qnav-grid{grid-template-columns:repeat(5,1fr);gap:4px}
+  .qnav button{height:26px;font-size:11.5px;background:transparent}
+  .qnav button:not(.picked,.ok,.bad):hover{background:var(--bg);color:var(--fg)}
   /* 10문항(2줄)마다 살짝 띄운다 */
   .qnav button:nth-child(10n+1):not(:first-child),.qnav button:nth-child(10n+2):not(:nth-child(2)),
   .qnav button:nth-child(10n+3):not(:nth-child(3)),.qnav button:nth-child(10n+4):not(:nth-child(4)),
@@ -174,8 +185,6 @@ main{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
 .acct-msg:empty{display:none}
 .memo-tools{display:inline-flex;gap:12px;flex-wrap:wrap;margin-left:auto}
 .memo-tools label{cursor:pointer}
-.qnav .noted{position:relative}
-.qnav .noted::after{content:"";position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:13px;max-width:calc(100% - 32px);z-index:20}
 /* 문항 이미지 왼쪽 위 번호 자리에 겹친 투명 채점 버튼 + 색연필 채점 표시 */
 .qimg{position:relative;overflow:visible}
