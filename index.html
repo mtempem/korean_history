@@ -264,11 +264,13 @@ main{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
 .ph.open{grid-column:span 2}
 
 @media (max-width:760px){
-  /* 모바일 상단: 로고와 저장하기를 한 줄에, 메뉴 토글은 아래 줄 가운데 */
-  .bar{display:grid;grid-template-columns:1fr auto;grid-template-areas:"brand acct" "tabs tabs";row-gap:10px;column-gap:12px}
-  .brand{grid-area:brand;margin:0;align-self:center}
-  .acct{grid-area:acct}
-  .tabs{grid-area:tabs;justify-self:center}
+  /* 모바일 상단: 두 줄 로고 · 메뉴 토글 · 저장하기를 한 줄에 */
+  .bar{display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:8px;padding-block:8px}
+  .brand{margin:0;font-size:15px;line-height:1.15}
+  .brand span{display:block}
+  .tabs{justify-self:center;padding:2px}
+  .tabs button{padding:6px 9px;font-size:12.5px;white-space:nowrap}
+  .acct-btn{padding:6px 9px;font-size:12.5px;white-space:nowrap}
   .cview{grid-template-columns:minmax(0,1fr);gap:12px}
   .clist{display:none}
   .mcsel{display:block;width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);font:inherit}
@@ -282,7 +284,7 @@ main{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
 
 <header class="top">
   <div class="bar">
-    <div class="brand">한능검 심화 기출노트<small>60–79회</small></div>
+    <div class="brand"><span>한능검 심화</span> <span>기출노트</span><small>60–79회</small></div>
     <div class="tabs" role="tablist">
       <button role="tab" id="tab-round" aria-selected="true">회차별 풀이</button>
       <button role="tab" id="tab-country" aria-selected="false">나라별 선지</button>
