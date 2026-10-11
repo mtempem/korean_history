@@ -103,7 +103,6 @@ window.HQCloud = (() => {
         <ul class="modal-list">
           <li>${ck}폰·PC에서 이어 풀기</li>
           <li>${ck}문제별 필기 보관</li>
-          <li>${ck}인터넷 사용 기록을 삭제해도 그대로</li>
           <li>${ck}지금까지 푼 기록도 함께 저장</li>
         </ul>
         <form id="acct-form">
