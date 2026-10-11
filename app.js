@@ -91,8 +91,14 @@
       </span>
     </div>`);
     col.append(tb);
-    const nav = el('<div class="qnav" aria-label="문항 이동"></div>');
+    const nav = el('<div class="qnav" id="qnav" aria-label="문항 이동"></div>');
     col.append(nav);
+    // 모바일: 번호판은 숨겨 두고 왼쪽 아래 버튼으로 아래에서 꺼내 본다(PC에서는 CSS로 감춤)
+    const fab = el('<button class="qnav-fab" aria-controls="qnav" aria-expanded="false"><b class="qnav-cur">1</b><span>/ ' + ex.questions.length + '</span></button>');
+    const backdrop = el('<div class="qnav-backdrop" hidden></div>');
+    col.append(fab, backdrop);
+    fab.addEventListener('click', () => toggleSheet(!nav.classList.contains('open')));
+    backdrop.addEventListener('click', () => toggleSheet(false));
 
     const shown = state.onlyNotes ? ex.questions.filter(q => notes.get(state.round, q.n)) : ex.questions;
     shown.forEach(q => col.append(questionCard(q, picks)));
@@ -281,9 +287,16 @@
       for (const e of es) if (e.isIntersecting) {
         curQ = +e.target.id.slice(1);
         app.querySelectorAll('.qnav button').forEach(b => b.classList.toggle('cur', +b.dataset.n === curQ));
+        const c = app.querySelector('.qnav-cur'); if (c) c.textContent = curQ;
       }
     }, { rootMargin: '-35% 0px -60% 0px' });
     app.querySelectorAll('.q').forEach(c => spy.observe(c));
+  }
+
+  function toggleSheet(open) {
+    const nav = app.querySelector('.qnav'), fab = app.querySelector('.qnav-fab'), bd = app.querySelector('.qnav-backdrop');
+    if (!nav) return;
+    nav.classList.toggle('open', open); bd.hidden = !open; fab.setAttribute('aria-expanded', open);
   }
 
   function updateScore() {
@@ -303,7 +316,11 @@
       return `<button class="${cls}" data-n="${q.n}" aria-label="${q.n}번으로 이동">${q.n}</button>`;
     }).join('');
     nav.innerHTML = `<div class="qnav-head"><span>${ex.round}회</span><span class="qnav-prog">${picked}<i>/</i>${ex.questions.length}</span></div><div class="qnav-grid">${cells}</div>`;
-    nav.onclick = e => { const b = e.target.closest('button'); const t = b && document.getElementById('q' + b.dataset.n); t && t.scrollIntoView({ behavior: 'smooth' }); };
+    nav.onclick = e => {
+      const b = e.target.closest('button'); const t = b && document.getElementById('q' + b.dataset.n);
+      if (!t) return;
+      toggleSheet(false); t.scrollIntoView({ behavior: 'smooth' });
+    };
     const s = app.querySelector('#score');
     if (state.mode === 'review') s.textContent = '';
     else if (nGraded) s.innerHTML = `<b>${got}</b>점 · 채점 ${nGraded}문항 중 ${right}개 정답${picked > nGraded ? ` · 미채점 선택 ${Object.keys(picks).filter(n => !graded[n]).length}` : ''}`;
