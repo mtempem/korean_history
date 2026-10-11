@@ -137,7 +137,7 @@ window.HQCloud = (() => {
     // file:// 에서는 로그인 링크가 돌아올 주소가 없으므로 동기화를 켜지 않는다
     if (location.protocol === 'file:') { console.info('[동기화] 웹 주소(http/https)로 열어야 로그인할 수 있어요.'); return; }
     try { await loadLib(); } catch { return console.error('[동기화] Supabase 라이브러리를 불러오지 못했어요.'); }
-    sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+    sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
     document.getElementById('acct').hidden = false;
     sb.auth.onAuthStateChange((ev, session) => {
       const next = session?.user || null;

@@ -449,7 +449,8 @@
     state.view = v; store.set('view', v);
     tabR.setAttribute('aria-selected', v === 'round'); tabC.setAttribute('aria-selected', v === 'country');
     v === 'round' ? renderRound() : renderCountry();
-    if (location.hash !== '#' + v) history.replaceState(null, '', '#' + v);
+    // 로그인 직후 주소에 붙어 오는 정보(#access_token 등)는 건드리지 않는다
+    if (location.hash !== '#' + v && !/access_token|error_description/.test(location.hash)) history.replaceState(null, '', '#' + v);
   }
   tabR.onclick = () => { go('round'); window.scrollTo(0, 0); };
   tabC.onclick = () => { go('country'); window.scrollTo(0, 0); };
