@@ -125,16 +125,15 @@ main{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
   main{max-width:none}
   .cview{max-width:1048px;margin:0 auto}
   /* 번호판: 왼쪽 가운데 높이에 떠 있는 5열×10줄 패널 */
-  /* 번호판(178px)+간격(22px)+문항·메모(1048px)를 한 덩어리로 보고 화면 가운데에 둔다 */
-  .qnav{position:fixed;z-index:12;left:max(16px,calc(50vw - 624px));top:50%;transform:translateY(-50%);margin:0;
+  /* 문항·메모(1048px)는 화면 가운데, 번호판(178px)은 그 왼쪽 여백의 가운데에 둔다 */
+  .qnav{position:fixed;z-index:12;left:max(19px,calc(25vw - 351px));top:50%;transform:translateY(-50%);margin:0;
     grid-template-columns:repeat(5,28px);gap:4px;padding:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px -14px rgba(0,0,0,.35)}
   .qnav button{width:28px;height:26px;font-size:11.5px}
   /* 10문항(2줄)마다 살짝 띄운다 */
   .qnav button:nth-child(10n+1):not(:first-child),.qnav button:nth-child(10n+2):not(:nth-child(2)),
   .qnav button:nth-child(10n+3):not(:nth-child(3)),.qnav button:nth-child(10n+4):not(:nth-child(4)),
   .qnav button:nth-child(10n+5):not(:nth-child(5)){margin-top:8px}
-  .col-round{max-width:1048px;margin-left:max(200px,calc(50vw - 440px));margin-right:auto}
-  .bar{max-width:1280px}
+  .col-round{max-width:1048px;margin-left:max(200px,calc((100% - 1048px) / 2));margin-right:auto}
 }
 @media (min-width:1000px){
   /* 문항 카드는 원래 폭(760px) 그대로 두고, 메모지만 카드 바깥 오른쪽에 붙인다 */
