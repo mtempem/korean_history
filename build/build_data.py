@@ -19,6 +19,22 @@ ALIAS = {'대한제국': '개항기', '근대': '개항기', '개화기': '개�
 KING_FIX = {'광개토대왕': '광개토대왕', '광개토왕': '광개토대왕', '흥선대원군': '고종'}
 
 
+def jpeg_size(path):
+    """JPEG 헤더에서 (너비, 높이)를 읽는다. 화면에 미리 자리를 잡아 스크롤 위치가 밀리지 않게 하는 데 쓴다."""
+    with open(path, 'rb') as f:
+        data = f.read()
+    i = 2
+    while i < len(data):
+        if data[i] != 0xFF:
+            i += 1
+            continue
+        marker, length = data[i + 1], int.from_bytes(data[i + 2:i + 4], 'big')
+        if 0xC0 <= marker <= 0xCF and marker not in (0xC4, 0xC8, 0xCC):
+            return int.from_bytes(data[i + 7:i + 9], 'big'), int.from_bytes(data[i + 5:i + 7], 'big')
+        i += 2 + length
+    return None
+
+
 def fix_country(c):
     c = (c or '').strip()
     if c in COUNTRIES:
@@ -97,8 +113,12 @@ def main(src=os.path.join(SRC, 'explain'), answers_path=os.path.join(SRC, 'answe
                                 if os.path.exists(os.path.join(ROOT, f'img/{r}/{n:02d}-{i + 1}.jpg')) else {})}
                             for i, c in enumerate(q.get('choices', []))],
             }
+            if out['img']:
+                out['iw'], out['ih'] = jpeg_size(os.path.join(ROOT, out['img']))
             for i, c in enumerate(out['choices']):
                 cid = f'{r}-{n}-{i + 1}'
+                if c.get('ph'):
+                    c['pw'], c['phh'] = jpeg_size(os.path.join(ROOT, c['ph']))
                 if cid in xs:
                     c['x'] = 1  # 거짓 서술: 회차별 풀이에만 보이고 나라별 정리에서는 뺀다
                 if cid in moves:

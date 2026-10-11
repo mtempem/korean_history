@@ -195,7 +195,7 @@
     // 이미지에 발문·배점이 함께 들어 있으므로, 이미지가 있으면 텍스트 발문은 생략
     let body = q.img ? '' : head;
     const gbtn = review ? '' : `<div class="qgrade-box"><button class="qgrade" title="${q.n}번 채점" aria-label="${q.n}번 채점"></button>${MARK}</div>`;
-    if (q.img) body += `<div class="qimg"><img loading="lazy" src="${esc(imgSrc(q.img))}" alt="${q.n}번. ${esc(q.q)}">${gbtn}</div>`;
+    if (q.img) body += `<div class="qimg"><img loading="lazy" width="${q.iw || ''}" height="${q.ih || ''}" src="${esc(imgSrc(q.img))}" alt="${q.n}번. ${esc(q.q)}">${gbtn}</div>`;
     else if (q.material) body += `<div class="clue" style="background:var(--bg)">${esc(q.material)}</div>`;
     if (q.src) body += `<div class="note">원본 문제지에 이 문항이 빠져 있어, 공개 기출 자료를 검색해 텍스트로 복원했습니다.</div>`;
     if (q.missing) body += `<div class="note">원본 문제지에 이 문항이 빠져 있습니다.</div>`;
@@ -210,7 +210,7 @@
         <div class="row">
           <button class="pick" aria-label="${n}번 선택">${n}</button>
           <button class="ctext" aria-expanded="${review}"><span class="tx">${c.ph
-            ? `<img class="cthumb" loading="lazy" src="${esc(imgSrc(c.ph))}" alt="${n}번 사진"><span class="phname">${esc(photoName(c.t))}</span>`
+            ? `<img class="cthumb" loading="lazy" width="${c.pw || ''}" height="${c.phh || ''}" src="${esc(imgSrc(c.ph))}" alt="${n}번 사진"><span class="phname">${esc(photoName(c.t))}</span>`
             : esc(c.t)}</span><span class="caret" aria-hidden="true">▶</span></button>
         </div>
         <div class="exp">${tagsHTML(c)}<span class="vd">${verdict}</span>${esc(c.e)}</div>
@@ -293,6 +293,15 @@
     app.querySelectorAll('.q').forEach(c => spy.observe(c));
   }
 
+  // 문항으로 이동: 부드럽게 스크롤한 뒤, 도중에 위쪽 내용이 늘어나 덜 갔으면 한 번 더 맞춘다
+  function goTo(card) {
+    card.scrollIntoView({ behavior: 'smooth' });
+    setTimeout(() => {
+      const want = parseFloat(getComputedStyle(card).scrollMarginTop) || 0;
+      if (Math.abs(card.getBoundingClientRect().top - want) > 12) card.scrollIntoView();
+    }, 700);
+  }
+
   function toggleSheet(open) {
     const nav = app.querySelector('.qnav'), fab = app.querySelector('.qnav-fab'), bd = app.querySelector('.qnav-backdrop');
     if (!nav) return;
@@ -319,7 +328,7 @@
     nav.onclick = e => {
       const b = e.target.closest('button'); const t = b && document.getElementById('q' + b.dataset.n);
       if (!t) return;
-      toggleSheet(false); t.scrollIntoView({ behavior: 'smooth' });
+      toggleSheet(false); goTo(t);
     };
     const s = app.querySelector('#score');
     if (state.mode === 'review') s.textContent = '';
