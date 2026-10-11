@@ -115,10 +115,9 @@ main{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
 .q.done .phname,.ch.open .phname{display:block}
 .qmain{min-width:0}
 .memo{margin:6px 0 8px;padding-top:8px;border-top:1px dashed var(--line)}
-.memo-btn{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;color:var(--muted);padding:2px 0}
-.memo-state{font-size:11.5px;padding:0 6px;border:1px solid var(--line);border-radius:4px}
-.memo.has .memo-btn{color:var(--accent);font-weight:700}
-.memo.has .memo-state{border-color:var(--accent)}
+.memo{display:flex;flex-direction:column}
+.memo-btn{align-self:flex-end;font-size:12.5px;color:var(--muted);padding:4px 10px;border:1px solid var(--line);border-radius:999px}
+.memo.has .memo-btn{color:var(--accent);border-color:var(--accent);font-weight:700}
 .memo-ta{display:none;width:100%;margin-top:8px;min-height:112px;padding:0 14px 28px;border:0;border-radius:0;resize:vertical;
   color:var(--memo-ink);font:17px/28px var(--display);
   background-color:var(--memo);background-image:repeating-linear-gradient(to bottom,transparent 0 27px,var(--memo-line) 27px 28px);background-attachment:local;

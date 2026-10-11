@@ -215,7 +215,7 @@
     const memo = notes.get(state.round, q.n);
     card.innerHTML = `<div class="qmain">${body}</div>
       <aside class="memo${memo ? ' has' : ''}">
-        <button class="memo-btn" aria-expanded="false"><span class="memo-label">필기</span><span class="memo-state">${memo ? '보기' : '쓰기'}</span></button>
+        <button class="memo-btn" aria-expanded="false">필기하기</button>
         <textarea class="memo-ta" aria-label="${q.n}번 필기" placeholder="메모하기…">${esc(memo)}</textarea>
       </aside>`;
     const box = card.querySelector('.memo'), ta = card.querySelector('.memo-ta'), mb = card.querySelector('.memo-btn');
@@ -227,11 +227,11 @@
         const has = !!ta.value.trim();
         notes.set(state.round, q.n, ta.value);
         box.classList.toggle('has', has);
-        mb.querySelector('.memo-state').textContent = has ? '보기' : '쓰기';
       }, 300);
     });
     mb.addEventListener('click', () => {
       const open = box.classList.toggle('open'); mb.setAttribute('aria-expanded', open);
+      mb.textContent = open ? '필기접기' : '필기하기';
       if (open) { grow(); ta.focus(); }
     });
 
