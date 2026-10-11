@@ -107,17 +107,7 @@
       const b = e.target.closest('button'); if (!b) return;
       state.mode = b.dataset.m; store.set('mode', state.mode); renderRound();
     });
-    // 실수로 누르는 것을 막기 위해 한 번 더 눌러야 초기화된다
-    const rb = tb.querySelector('#reset'); let armed;
-    rb.addEventListener('click', () => {
-      if (!armed) {
-        rb.textContent = '한 번 더 누르면 초기화'; rb.classList.add('armed');
-        armed = setTimeout(() => { armed = null; rb.textContent = '풀이 초기화'; rb.classList.remove('armed'); }, 3000);
-        return;
-      }
-      clearTimeout(armed); armed = null;
-      store.set(answersKey(state.round), {}); store.set(gradedKey(state.round), {}); renderRound();
-    });
+    tb.querySelector('#reset').addEventListener('click', () => confirmReset(ex));
     if (state.mode === 'solve') col.append(el('<button class="grade-all" id="gradeall">채점하기</button>'));
     const ga = col.querySelector('#gradeall');
     ga && ga.addEventListener('click', () => {
@@ -146,6 +136,37 @@
     const curBtn = col.querySelector(`.rounds button[data-r="${state.round}"]`);
     curBtn && curBtn.scrollIntoView({ block: 'nearest', inline: 'center' });
     updateScore();
+  }
+
+  // 풀이 초기화 확인 창: 필기는 함께 지울지 고른다(기본은 남김)
+  function confirmReset(ex) {
+    const r = ex.round, mine = Object.keys(notes.all()).filter(k => k.startsWith(r + '-'));
+    const m = el(`<div class="modal" id="reset-modal">
+      <div class="modal-card modal-sm" role="dialog" aria-modal="true" aria-labelledby="reset-title">
+        <h2 id="reset-title">${r}회 풀이 초기화</h2>
+        <p class="modal-lead">고른 답과 채점 기록을 모두 지워요.</p>
+        ${mine.length ? `<label class="check"><input type="checkbox" id="reset-notes"><span>필기 ${mine.length}개도 함께 지우기</span></label>` : ''}
+        <div class="modal-actions">
+          <button class="tb-btn" data-act="cancel">취소</button>
+          <button class="btn-danger" data-act="ok">초기화</button>
+        </div>
+      </div>
+    </div>`);
+    document.body.append(m);
+    const close = () => { m.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    document.addEventListener('keydown', onKey);
+    m.querySelector('[data-act="cancel"]').focus();
+    m.addEventListener('click', e => {
+      const act = e.target.closest('[data-act]')?.dataset.act;
+      if (e.target === m || act === 'cancel') return close();
+      if (act !== 'ok') return;
+      store.set(answersKey(r), {}); store.set(gradedKey(r), {});
+      if (m.querySelector('#reset-notes')?.checked) {
+        const all = notes.all(); mine.forEach(k => delete all[k]); store.set('notes', all);
+      }
+      close(); renderRound();
+    });
   }
 
   function isCorrect(q, pick) { return !q.a.length || q.a.includes(pick); }
