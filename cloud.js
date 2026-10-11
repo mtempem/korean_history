@@ -72,7 +72,8 @@ window.HQCloud = (() => {
   }
 
   /* ---------- 상단 계정 영역 ---------- */
-  const LABEL = { off: '', saving: '저장 중…', saved: '동기화됨', error: '동기화 실패 · 다시 시도 중' };
+  // 평소에는 아무것도 표시하지 않고, 저장에 실패했을 때만 알린다
+  const LABEL = { off: '', saving: '', saved: '', error: '저장 실패 · 다시 시도 중' };
   function status(s) { state = s; const el = document.querySelector('#acct .sync'); if (el) { el.textContent = LABEL[s]; el.dataset.s = s; } }
 
   function renderAcct() {
