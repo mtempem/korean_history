@@ -125,14 +125,16 @@ main{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
   main{max-width:none}
   .cview{max-width:1048px;margin:0 auto}
   /* 번호판: 왼쪽 가운데 높이에 떠 있는 5열×10줄 패널 */
-  .qnav{position:fixed;z-index:12;left:16px;top:50%;transform:translateY(-50%);margin:0;
+  /* 번호판(178px)+간격(22px)+문항·메모(1048px)를 한 덩어리로 보고 화면 가운데에 둔다 */
+  .qnav{position:fixed;z-index:12;left:max(16px,calc(50vw - 624px));top:50%;transform:translateY(-50%);margin:0;
     grid-template-columns:repeat(5,28px);gap:4px;padding:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px -14px rgba(0,0,0,.35)}
   .qnav button{width:28px;height:26px;font-size:11.5px}
-  .col-round{margin-left:max(210px,calc(50% - 530px));margin-right:auto}
+  .col-round{max-width:1048px;margin-left:max(200px,calc(50vw - 440px));margin-right:auto}
+  .bar{max-width:1280px}
 }
 @media (min-width:1000px){
   /* 문항 카드는 원래 폭(760px) 그대로 두고, 메모지만 카드 바깥 오른쪽에 붙인다 */
-  .col-round{max-width:1060px}
+  .col-round{max-width:1048px}
   .col-round .q{position:relative;max-width:760px;margin-right:288px}
   .memo{position:absolute;top:10px;bottom:0;left:calc(100% + 18px);width:270px;margin:0;padding:0;border-top:0;display:flex;flex-direction:column}
   .memo::before{content:"";position:absolute;z-index:1;top:-9px;left:50%;width:76px;height:20px;transform:translateX(-50%) rotate(-2deg);background:var(--accent-soft);opacity:.85;border-radius:0}
