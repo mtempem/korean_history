@@ -25,9 +25,9 @@
 - 선지 해설은 공식 해설이 아니다. 사진 선지 일부는 이름을 확정하지 못해 '(추정)'으로 표시했다.
 
 ## GitHub Pages 배포
-사이트 주소: https://mtempem.github.io/korean-history/
+사이트 주소: https://mtempem.github.io/korean_history/
 
-1. GitHub에서 `korean-history` 저장소를 만들고 이 폴더를 push한다. `test+answer/`(시험지 PDF 원본)는 `.gitignore`로 빠진다.
+1. GitHub에서 `korean_history` 저장소를 만들고 이 폴더를 push한다. `test+answer/`(시험지 PDF 원본)는 `.gitignore`로 빠진다.
 2. 저장소 **Settings > Pages**에서 Source를 `Deploy from a branch`, Branch를 `main` / `/ (root)`로 저장한다.
 3. 1~2분 뒤 위 주소로 열린다. 이후에는 push할 때마다 자동으로 갱신된다.
 
@@ -38,7 +38,7 @@
 
 1. [supabase.com](https://supabase.com)에서 가입하고 새 프로젝트를 만든다(무료 요금제로 충분).
 2. 대시보드 **SQL Editor**에 `supabase/schema.sql` 내용을 붙여 넣고 Run. → `progress` 테이블과 "자기 기록만 읽고 쓰기" 보안 규칙이 만들어진다.
-3. **Authentication > URL Configuration**: Site URL은 `https://mtempem.github.io/korean-history/`, Redirect URLs에는 `https://mtempem.github.io/korean-history/**`와 `http://localhost:8765/**`를 넣는다.
+3. **Authentication > URL Configuration**: Site URL은 `https://mtempem.github.io/korean_history/`, Redirect URLs에는 `https://mtempem.github.io/korean_history/**`와 `http://localhost:8765/**`를 넣는다.
 4. **Project Settings > API**의 Project URL과 `anon` public 키를 `config.js`에 넣는다. `service_role` 키는 절대 넣지 말 것.
 5. (선택) Google 로그인: **Authentication > Providers > Google**을 켜고 `config.js`의 `google`을 `true`로.
 
