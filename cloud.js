@@ -106,12 +106,12 @@ window.HQCloud = (() => {
           <li>${ck}지금까지 푼 기록도 함께 저장</li>
         </ul>
         <form id="acct-form">
-          <input id="acct-email" type="email" required autocomplete="email" placeholder="이메일 주소" aria-label="이메일">
+          <p class="modal-note">비밀번호 없이, 메일로 받은 링크를 누르면 로그인돼요.</p>
+          <input id="acct-email" type="email" required autocomplete="email" placeholder="example@gmail.com" aria-label="이메일 주소">
           <button type="submit" class="acct-primary">로그인 링크 받기</button>
           ${cfg.google ? '<button type="button" class="acct-google" id="acct-google">Google로 계속하기</button>' : ''}
           <p class="acct-msg" id="acct-msg" role="status"></p>
         </form>
-        <p class="modal-note">비밀번호 없이, 메일로 받은 링크를 누르면 로그인돼요.</p>
       </div>`;
     document.body.append(m);
     const close = () => { m.remove(); document.removeEventListener('keydown', onKey); };
