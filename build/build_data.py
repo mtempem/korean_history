@@ -85,8 +85,15 @@ SRC = os.path.join(ROOT, 'build', 'src')
 def main(src=os.path.join(SRC, 'explain'), answers_path=os.path.join(SRC, 'answers.json'), concepts_dir=os.path.join(SRC, 'concepts')):
     keys, rep = load_concepts(concepts_dir)
     xs, moves = load_false(concepts_dir)
+    # 개념별 '누구 때' 라벨(왕·인물·시기). build/src/who/*.json = {"나라|개념키": "라벨"}
+    who = {}
+    who_dir = os.path.join(os.path.dirname(concepts_dir), 'who')
+    for fn in sorted(os.listdir(who_dir)) if os.path.isdir(who_dir) else []:
+        if fn.endswith('.json'):
+            who.update(json.load(open(os.path.join(who_dir, fn))))
     with open(os.path.join(ROOT, 'data', 'concepts.js'), 'w') as f:
         f.write('HQ.rep=' + json.dumps(rep, ensure_ascii=False, separators=(',', ':')) + ';\n')
+        f.write('HQ.who=' + json.dumps(who, ensure_ascii=False, separators=(',', ':')) + ';\n')
     answers = json.load(open(answers_path))
     os.makedirs(os.path.join(ROOT, 'data'), exist_ok=True)
     report = []

@@ -339,6 +339,10 @@
   /* ---------- 나라별 선지 ---------- */
   const GALLERY = '__gallery';
   const REP = HQ.rep || {};
+  const WHO = HQ.who || {};
+  // 선지를 보고 떠올릴 답: '신라 지증왕'처럼 나라 + 왕/인물/시기(없으면 나라만)
+  // 라벨이 다른 나라 이름으로 시작하면(예: 가야 멸망 → '신라 진흥왕') 그대로 쓴다
+  const labelOf = it => it.who && COUNTRIES.some(c => it.who.startsWith(c + ' ')) ? it.who : it.c + (it.who ? ' ' + it.who : '');
   const isOrdering = t => /^[\s()가나다라마바ㄱㄴㄷㄹ,\-–→]+$/.test(t);
   const isPhoto = c => !!c.ph || /^\[(사진|그림)\]/.test(c.t);
   // (가), ㉠, 'ㄱ.' 같은 지시 표지를 떼고 선지 문장만 남긴다
@@ -365,11 +369,12 @@
     index = [...map.values()].map(it => {
       const vs = [...it.variants.entries()].sort((a, b) => b[1] - a[1]).map(v => v[0]);
       const rep = (it.g && REP[it.c + '|' + it.g]) || vs[0];
-      return { ...it, t: it.photo ? photoName(rep) : clean(rep), others: vs.filter(v => v !== rep && v !== clean(rep)) };
+      const who = (it.g && WHO[it.c + '|' + it.g]) || '';
+      return { ...it, who, t: it.photo ? photoName(rep) : clean(rep), others: vs.filter(v => v !== rep && v !== clean(rep)) };
     });
   }
 
-  function groupName(it) { return it.k || it.p || '기타'; }
+  function groupName(it) { return it.who || it.k || it.p || '기타'; }
 
   function refsHTML(it) {
     return `<div class="refs">${it.refs.map(r => `<button class="${r.ans ? 'ans' : ''}" data-r="${r.r}" data-n="${r.n}" title="${r.ans ? '정답 선지로 출제' : '오답 선지로 출제'}">${r.r}회 ${r.n}번 ${CIRCLE[r.i - 1]}${r.ans ? ' 정답' : ''}</button>`).join('')}</div>`;
@@ -379,9 +384,9 @@
     return `<div class="item ch">
       <div class="row">
         <span class="freq${f >= 3 ? ' hot' : ''}" title="${f}회 출제">×${f}</span>
-        <button class="ctext" aria-expanded="false"><span class="tx">${esc(it.t)}</span><span class="caret" aria-hidden="true">▶</span></button>
+        <button class="ctext" aria-expanded="false"><span class="tx">${esc(it.t)}<span class="who">${esc(labelOf(it))}</span></span><span class="caret" aria-hidden="true">▶</span></button>
       </div>
-      <div class="exp">${tagsHTML(it)}${esc(it.e)}
+      <div class="exp">${esc(it.e)}
         ${it.others.length ? `<div class="variants"><span>같은 개념의 다른 선지</span>${it.others.map(v => `<div>${esc(v)}</div>`).join('')}</div>` : ''}
         ${refsHTML(it)}
       </div>
@@ -422,6 +427,7 @@
         <button data-s="freq" aria-pressed="${state.sort === 'freq'}">빈출순</button>
         <button data-s="group" aria-pressed="${state.sort === 'group'}">왕·인물별</button>
       </div>
+      <button class="quiz-btn" id="quizbtn">퀴즈</button>
     </div>`));
     const list = el('<div id="clist"></div>');
     mainCol.append(list);
@@ -437,13 +443,14 @@
       mainCol.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b));
       drawList();
     });
+    mainCol.querySelector('#quizbtn').addEventListener('click', () => startQuiz(list, state.country === GALLERY ? null : state.country));
     const qi = mainCol.querySelector('#q');
     qi.addEventListener('input', () => { state.query = qi.value; drawList(); });
 
     function setCountry(c) {
       state.country = c; store.set('country', c);
       side.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.c === c));
-      sel.value = c; drawList(); window.scrollTo(0, 0);
+      sel.value = c; quizOn = false; drawList(); window.scrollTo(0, 0);
     }
 
     function textList(items, prefixCountry) {
@@ -488,6 +495,118 @@
       if (t) { const li = t.closest('.ch'); const o = li.classList.toggle('open'); t.setAttribute('aria-expanded', o); }
     });
     drawList();
+  }
+
+  /* ---------- 암기 퀴즈 ---------- */
+  // 선지 문장을 보고 '나라 왕/인물' 4개 중 고른다. 오답 보기는 같은 나라 다른 왕 2개 + 가까운 시대 1개처럼 헷갈리는 것으로.
+  let quizOn = false;
+  const QUIZ_LEN = 10;
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+  function quizOptions(ans) {
+    const answer = labelOf(ans), ci = COUNTRIES.indexOf(ans.c);
+    const pool = new Map();  // 라벨 → {c, 거리}
+    for (const it of index) {
+      if (it.photo) continue;
+      const l = labelOf(it);
+      if (l === answer || pool.has(l)) continue;
+      pool.set(l, { c: it.c, who: it.who, d: Math.abs(COUNTRIES.indexOf(it.c) - ci) });
+    }
+    const all = [...pool.entries()];
+    const pick = (arr, n) => shuffle(arr).slice(0, n).map(x => x[0]);
+    let opts = [];
+    if (ans.who) {
+      opts.push(...pick(all.filter(([, v]) => v.c === ans.c && v.who), 2));          // 같은 나라 다른 왕·인물
+      opts.push(...pick(all.filter(([l, v]) => v.c !== ans.c && v.who && v.d <= 2 && !opts.includes(l)), 3 - opts.length));
+    } else {
+      opts.push(...pick(all.filter(([, v]) => !v.who && v.d > 0 && v.d <= 3), 3)); // 나라·시대만 묻는 문제는 가까운 나라끼리
+    }
+    if (opts.length < 3) opts.push(...pick(all.filter(([l]) => !opts.includes(l)), 3 - opts.length));
+    return shuffle([answer, ...opts]);
+  }
+
+  function startQuiz(list, country, home = country) {
+    quizOn = true;
+    const wrong = store.get('quizWrong', {});
+    const base = index.filter(it => !it.photo && (!country || it.c === country));
+    // 자주 나온 선지와 전에 틀린 선지가 더 자주 나오게 가중치를 준다
+    const weighted = base.map(it => ({ it, w: Math.random() * (1 + Math.min(it.refs.length, 6) * 0.4 + (wrong[it.c + '|' + it.t] || 0) * 1.5) }))
+      .sort((a, b) => b.w - a.w).map(x => x.it);
+    const qs = weighted.slice(0, Math.min(QUIZ_LEN, weighted.length));
+    let i = 0, right = 0;
+    const missed = [];
+
+    const draw = () => {
+      if (!quizOn) return;
+      if (i >= qs.length) return summary();
+      const it = qs[i], opts = quizOptions(it), answer = labelOf(it);
+      list.innerHTML = `<div class="quiz">
+        <div class="quiz-top">
+          ${home ? `<div class="seg quiz-sc" role="group" aria-label="퀴즈 범위">
+            <button data-sc="home" aria-pressed="${!!country}">${esc(home)}</button>
+            <button data-sc="all" aria-pressed="${!country}">전체</button>
+          </div>` : '<span class="quiz-scope">전체 퀴즈</span>'}
+          <span class="quiz-prog">${i + 1} / ${qs.length}</span>
+          <button class="linkbtn" data-act="exit">목록으로</button>
+        </div>
+        <div class="quiz-bar"><i style="width:${i / qs.length * 100}%"></i></div>
+        <p class="quiz-q">${esc(it.t)}</p>
+        <div class="quiz-opts">${opts.map((o, k) => `<button class="quiz-opt" data-o="${esc(o)}"><span>${k + 1}</span>${esc(o)}</button>`).join('')}</div>
+        <div class="quiz-fb" hidden></div>
+      </div>`;
+      const box = list.querySelector('.quiz');
+      const choose = btn => {
+        if (box.classList.contains('answered')) return;
+        box.classList.add('answered');
+        const ok = btn.dataset.o === answer;
+        const key = it.c + '|' + it.t, w = store.get('quizWrong', {});
+        if (ok) { right++; if (w[key]) { w[key]--; if (!w[key]) delete w[key]; } }
+        else { missed.push(it); w[key] = (w[key] || 0) + 1; }
+        store.set('quizWrong', w);
+        box.querySelectorAll('.quiz-opt').forEach(b => {
+          if (b.dataset.o === answer) b.classList.add('ok');
+          else if (b === btn) b.classList.add('bad');
+        });
+        const fb = box.querySelector('.quiz-fb');
+        fb.hidden = false;
+        fb.innerHTML = `<p class="quiz-verdict ${ok ? 'o' : 'x'}">${ok ? '정답' : '오답'} · ${esc(answer)}</p>
+          <p class="quiz-exp">${esc(it.e)}</p>
+          <button class="quiz-next">${i + 1 < qs.length ? '다음 문제' : '결과 보기'}</button>`;
+        fb.querySelector('.quiz-next').focus();
+      };
+      box.addEventListener('click', e => {
+        const o = e.target.closest('.quiz-opt'); if (o) return choose(o);
+        if (e.target.closest('.quiz-next')) { i++; draw(); }
+        if (e.target.closest('[data-act="exit"]')) exit();
+        const sc = e.target.closest('[data-sc]');
+        if (sc) { document.removeEventListener('keydown', onKey); startQuiz(list, sc.dataset.sc === 'home' ? home : null, home); }
+      });
+    };
+
+    const summary = () => {
+      list.innerHTML = `<div class="quiz quiz-end">
+        <p class="quiz-scope">${esc(country || '전체')} 퀴즈</p>
+        <p class="quiz-score"><b>${right}</b> / ${qs.length}</p>
+        ${missed.length ? `<div class="quiz-missed"><p>틀린 선지</p>${missed.map(it => `<div><span>${esc(it.t)}</span><b>${esc(labelOf(it))}</b></div>`).join('')}</div>` : '<p class="quiz-perfect">모두 맞혔어요.</p>'}
+        <div class="quiz-actions">
+          <button class="tb-btn" data-act="exit">목록으로</button>
+          <button class="quiz-next" data-act="again">한 번 더</button>
+        </div>
+      </div>`;
+      list.querySelector('[data-act="exit"]').onclick = exit;
+      list.querySelector('[data-act="again"]').onclick = () => { document.removeEventListener('keydown', onKey); startQuiz(list, country, home); };
+    };
+    const exit = () => { quizOn = false; document.removeEventListener('keydown', onKey); renderCountry(); };
+    // 키보드 1~4로 고르고 Enter로 다음
+    const onKey = e => {
+      if (!quizOn || !list.isConnected) return document.removeEventListener('keydown', onKey);
+      const opts = list.querySelectorAll('.quiz-opt');
+      if (/^[1-4]$/.test(e.key) && opts[e.key - 1]) opts[e.key - 1].click();
+      else if (e.key === 'Enter') list.querySelector('.quiz-next')?.click();
+    };
+    document.addEventListener('keydown', onKey);
+    window.scrollTo(0, 0);
+    draw();
   }
 
   /* ---------- 탭 ---------- */
