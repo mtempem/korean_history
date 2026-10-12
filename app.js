@@ -516,13 +516,10 @@
     const all = [...pool.entries()];
     const pick = (arr, n) => shuffle(arr).slice(0, n).map(x => x[0]);
     let opts = [];
-    if (ans.who) {
-      opts.push(...pick(all.filter(([, v]) => v.c === ans.c && v.who), 2));          // 같은 나라 다른 왕·인물
-      opts.push(...pick(all.filter(([l, v]) => v.c !== ans.c && v.who && v.d <= 2 && !opts.includes(l)), 3 - opts.length));
-    } else {
-      opts.push(...pick(all.filter(([, v]) => !v.who && v.d > 0 && v.d <= 3), 3)); // 나라·시대만 묻는 문제는 가까운 나라끼리
-    }
-    if (opts.length < 3) opts.push(...pick(all.filter(([l]) => !opts.includes(l)), 3 - opts.length));
+    // 보기도 왕·인물·시기 라벨끼리만: 같은 나라 다른 왕·인물 2개 + 가까운 시대 1개
+    opts.push(...pick(all.filter(([, v]) => v.c === ans.c && v.who), 2));
+    opts.push(...pick(all.filter(([l, v]) => v.c !== ans.c && v.who && v.d <= 2 && !opts.includes(l)), 3 - opts.length));
+    if (opts.length < 3) opts.push(...pick(all.filter(([l, v]) => v.who && !opts.includes(l)), 3 - opts.length));
     return shuffle([answer, ...opts]);
   }
 
@@ -543,7 +540,8 @@
     const cfg = store.get('quizCfg', { eras: [], n: 10 });
     let pickEras = new Set(cfg.eras.filter(e => QUIZ_SCOPES.some(([x]) => x === e)));
     let only = null, n = cfg.n || 10;
-    const poolOf = () => index.filter(it => !it.photo && it.c !== '기타' && quizText(it) &&
+    // 왕·인물·시기 라벨이 있는 선지만 낸다(나라·시대 이름만 맞히는 문제는 너무 쉬워서 뺀다)
+    const poolOf = () => index.filter(it => !it.photo && it.who && it.c !== '기타' && quizText(it) &&
       (only ? it.c === only : !pickEras.size || QUIZ_SCOPES.some(([e, cs]) => pickEras.has(e) && cs.includes(it.c))));
     const draw = () => {
       const pool = poolOf();
