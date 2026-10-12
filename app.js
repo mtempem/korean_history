@@ -794,7 +794,7 @@
           ${NB_COLORS.map(([n, c]) => `<button class="nb-color" data-color="${c}" title="${n}" aria-label="글자색 ${n}"><i style="${c ? 'background:' + c : ''}"></i></button>`).join('')}
           <span class="nb-saved" id="nb-saved"></span>
         </div>
-        <div class="nb-editor" id="nb-editor" contenteditable="true" spellcheck="false" data-ph="강의를 들으며 ${esc(kk === ALL ? cc : kk)}에 대해 필기하세요. 글자를 선택하고 색을 고르거나 Ctrl+B로 굵게 할 수 있어요.">${cleanHTML(items[cur]?.body || '')}</div>
+        <div class="nb-paper"><div class="nb-editor" id="nb-editor" contenteditable="true" spellcheck="false" data-ph="강의를 들으며 ${esc(kk === ALL ? cc : kk)}에 대해 필기하세요. 글자를 선택하고 색을 고르거나 Ctrl+B로 굵게 할 수 있어요.">${cleanHTML(items[cur]?.body || '')}</div></div>
         ${related.length ? `<details class="nb-rel"><summary>기출 선지 ${related.length}개</summary><ul>${related.map(it => `<li><span class="freq${it.refs.length >= 3 ? ' hot' : ''}">×${it.refs.length}</span>${esc(it.t)}</li>`).join('')}</ul></details>` : ''}
       </section>
     </div>`;

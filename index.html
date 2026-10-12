@@ -2,7 +2,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang&family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
 /* 이서윤체(흥국생명, 상업적·웹 임베딩 무료) — 로고·제목용 */
 @font-face{font-family:'IsYun';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2202-2@1.0/LeeSeoyun.woff') format('woff');font-weight:normal;font-display:swap}
@@ -12,7 +12,6 @@
   --accent:#2f4f8f; --accent-soft:#e8edf7; --pencil:#d8322b; --memo:#fff5c4; --memo-line:#eadb9c; --memo-ink:#3b3423;
   --ok:#1f7a4d; --ok-soft:#e3f3ea; --bad:#b4352f; --bad-soft:#fae8e6;
   --display:"IsYun","Gowun Batang",serif;
-  --note:"Gowun Dodum","Noto Sans KR",sans-serif;
   --sans:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   color-scheme:light;
 }
@@ -325,10 +324,16 @@ button.tl-lh:hover small{color:var(--fg)}
 .nb-sep{width:1px;height:20px;background:var(--line);margin:0 4px}
 .nb-color i{display:block;width:14px;height:14px;border-radius:50%;background:var(--fg)}
 .nb-saved{margin-left:auto;font-size:12px;color:var(--muted)}
-.nb-editor{min-height:50vh;outline:none;font-family:var(--note);font-size:16.5px;line-height:1.9;letter-spacing:.01em;word-break:keep-all;overflow-wrap:anywhere}
-.nb-editor:empty::before{content:attr(data-ph);color:var(--muted);opacity:.7}
+/* 필기장 본문: 문제 메모와 같은 줄 있는 노란 메모지 (줄 간격 32px에 글줄을 맞춤) */
+.nb-paper{position:relative;margin-top:14px}
+.nb-paper::before{content:"";position:absolute;z-index:1;top:-9px;left:50%;width:90px;height:20px;transform:translateX(-50%) rotate(-2deg);background:var(--accent-soft);opacity:.85}
+.nb-editor{min-height:60vh;padding:16px 22px 32px;outline:none;font-family:var(--display);font-size:18px;line-height:32px;letter-spacing:.01em;word-break:keep-all;overflow-wrap:anywhere;color:var(--memo-ink);
+  background-color:var(--memo);background-image:repeating-linear-gradient(to bottom,transparent 0 31px,var(--memo-line) 31px 32px);background-position:0 16px;background-attachment:local;
+  box-shadow:0 1px 1px rgba(0,0,0,.06),0 10px 20px -12px rgba(60,45,0,.45)}
+.nb-editor:empty::before{content:attr(data-ph);color:var(--memo-ink);opacity:.45}
 .nb-editor b,.nb-editor strong{font-weight:700}
-.nb-editor ul,.nb-editor ol{padding-left:22px}
+.nb-editor ul,.nb-editor ol{margin:0;padding-left:22px}
+.nb-editor div,.nb-editor p{margin:0}
 .nb-rel{margin-top:22px;border-top:1px solid var(--line);padding-top:12px}
 .nb-rel summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted)}
 .nb-rel ul{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
