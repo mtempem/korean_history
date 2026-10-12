@@ -341,6 +341,10 @@
   const REP = HQ.rep || {};
   const WHO = HQ.who || {};
   const QQ = HQ.qq || {};
+  const WT = HQ.wt || {};
+  // 라벨 종류: k=왕·정부, t=시기, p=인물, o=단체·기구·운동. 퀴즈 보기는 같은 종류끼리 고른다
+  const kindOf = it => WT[it.c + '|' + it.g] || (/(왕|정부|내각|대원군|군정|마립간|이사금)$/.test(it.who) ? 'k'
+    : /^(구석기|신석기|청동기|철기|\d{4}년대.*)$/.test(it.who) ? 't' : 'p');
   // 선지를 보고 떠올릴 답: '신라 지증왕'처럼 나라 + 왕/인물/시기(없으면 나라만)
   // 라벨이 다른 나라 이름으로 시작하면(예: 가야 멸망 → '신라 진흥왕') 그대로 쓴다
   const labelOf = it => it.who && COUNTRIES.some(c => it.who.startsWith(c + ' ')) ? it.who : it.c + (it.who ? ' ' + it.who : '');
@@ -511,14 +515,18 @@
       if (it.photo || it.c === '기타') continue;  // '기타'는 나라·시대가 아니라 보기로 쓰지 않는다
       const l = labelOf(it);
       if (l === answer || pool.has(l)) continue;
-      pool.set(l, { c: it.c, who: it.who, d: Math.abs(COUNTRIES.indexOf(it.c) - ci) });
+      pool.set(l, { c: it.c, who: it.who, kind: kindOf(it), d: Math.abs(COUNTRIES.indexOf(it.c) - ci) });
     }
     const all = [...pool.entries()];
     const pick = (arr, n) => shuffle(arr).slice(0, n).map(x => x[0]);
     let opts = [];
-    // 보기도 왕·인물·시기 라벨끼리만: 같은 나라 다른 왕·인물 2개 + 가까운 시대 1개
-    opts.push(...pick(all.filter(([, v]) => v.c === ans.c && v.who), 2));
-    opts.push(...pick(all.filter(([l, v]) => v.c !== ans.c && v.who && v.d <= 2 && !opts.includes(l)), 3 - opts.length));
+    // 같은 종류(왕·인물·시기·단체) 안에서 그럴듯한 오답을 고른다:
+    // 같은 나라 +3, 이름 끝이 같음(…회, …정부, …왕) +2, 가까운 시대 +1, 약간의 무작위
+    const kind = kindOf(ans), tail = s => s.slice(-1), at = tail(ans.who);
+    const scored = all.filter(([, v]) => v.who && v.kind === kind)
+      .map(([l, v]) => [l, (v.c === ans.c ? 3 : 0) + (tail(v.who) === at ? 2 : 0) + (v.d <= 2 ? 1 : 0) + Math.random() * 1.5])
+      .sort((x, y) => y[1] - x[1]);
+    opts.push(...scored.slice(0, 3).map(x => x[0]));
     if (opts.length < 3) opts.push(...pick(all.filter(([l, v]) => v.who && !opts.includes(l)), 3 - opts.length));
     return shuffle([answer, ...opts]);
   }

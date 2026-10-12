@@ -89,14 +89,22 @@ def main(src=os.path.join(SRC, 'explain'), answers_path=os.path.join(SRC, 'answe
     who = {}
     who_dir = os.path.join(os.path.dirname(concepts_dir), 'who')
     for fn in sorted(os.listdir(who_dir)) if os.path.isdir(who_dir) else []:
-        if fn.endswith('.json') and fn != 'quizq.json':  # quizq.json은 퀴즈 문장이라 라벨이 아니다
+        if re.fullmatch(r'[A-G]\.json', fn):  # 그룹별 왕·인물·시기 라벨
             who.update(json.load(open(os.path.join(who_dir, fn))))
     with open(os.path.join(ROOT, 'data', 'concepts.js'), 'w') as f:
         f.write('HQ.rep=' + json.dumps(rep, ensure_ascii=False, separators=(',', ':')) + ';\n')
-        f.write('HQ.who=' + json.dumps(who, ensure_ascii=False, separators=(',', ':')) + ';\n')
         # 퀴즈용 문장(정답 이름을 지운 문장, null이면 퀴즈에서 제외)
         qq_path = os.path.join(who_dir, 'quizq.json')
         qq = json.load(open(qq_path)) if os.path.exists(qq_path) else {}
+        # 단체·기구·운동 라벨(o*.json): 라벨이 비어 있던 개념에 주체를 붙이고, 종류를 'o'로 표시
+        wt = {}
+        for fn in sorted(os.listdir(who_dir)) if os.path.isdir(who_dir) else []:
+            if re.fullmatch(r'o\d+\.json', fn):
+                for k, v in json.load(open(os.path.join(who_dir, fn))).items():
+                    if v and v.get('s') and not who.get(k):
+                        who[k] = v['s']; wt[k] = 'o'; qq[k] = v.get('q')
+        f.write('HQ.wt=' + json.dumps(wt, ensure_ascii=False, separators=(',', ':')) + ';\n')
+        f.write('HQ.who=' + json.dumps(who, ensure_ascii=False, separators=(',', ':')) + ';\n')
         f.write('HQ.qq=' + json.dumps(qq, ensure_ascii=False, separators=(',', ':')) + ';\n')
     answers = json.load(open(answers_path))
     os.makedirs(os.path.join(ROOT, 'data'), exist_ok=True)
