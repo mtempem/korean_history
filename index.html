@@ -275,41 +275,67 @@ main{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
 .variants div{padding-left:10px;border-left:2px solid var(--line)}
 .empty{padding:40px 0;color:var(--muted);text-align:center}
 .mcsel{display:none}
-/* 나라별 선지: 떠올릴 답(나라 + 왕/인물) */
-.who{display:block;margin-top:2px;font-size:12.5px;font-weight:700;color:var(--accent)}
-.quiz-btn{padding:7px 16px;border-radius:8px;background:var(--accent);color:var(--surface);font-size:13.5px;font-weight:700;white-space:nowrap}
-/* 암기 퀴즈 */
-.quiz{max-width:620px;margin:8px auto 0;padding:24px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
-.quiz-top{display:flex;align-items:center;gap:10px}
-.quiz-scope{font-family:var(--display);font-size:20px;margin:0}
-.quiz-prog{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto}
-.quiz-bar{height:4px;margin:12px 0 22px;border-radius:2px;background:var(--line);overflow:hidden}
-.quiz-bar i{display:block;height:100%;background:var(--accent);transition:width .25s}
-.quiz-q{margin:0 0 20px;font-size:18px;font-weight:500;line-height:1.55;text-wrap:balance}
-.quiz-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.quiz-opt{display:flex;align-items:center;gap:10px;padding:13px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:15px;text-align:left}
-.quiz-opt span{flex:none;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:var(--bg);color:var(--muted);font-size:12px;font-weight:700}
-.quiz-opt:hover{border-color:var(--accent)}
-.quiz.answered .quiz-opt{cursor:default}
-.quiz.answered .quiz-opt:not(.ok):not(.bad){opacity:.5}
-.quiz-opt.ok{border-color:var(--ok);background:var(--ok-soft);color:var(--ok);font-weight:700}
-.quiz-opt.bad{border-color:var(--bad);background:var(--bad-soft);color:var(--bad)}
-.quiz-fb{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
-.quiz-verdict{margin:0 0 6px;font-weight:700;font-size:15px}
-.quiz-verdict.o{color:var(--ok)} .quiz-verdict.x{color:var(--bad)}
-.quiz-exp{margin:0 0 16px;font-size:14px;color:var(--fg)}
-.quiz-next{width:100%;padding:12px;border-radius:10px;background:var(--fg);color:var(--bg);font-weight:700;font-size:14.5px}
-.quiz-end{text-align:center}
-.quiz-score{margin:10px 0 18px;font-size:16px;color:var(--muted)}
-.quiz-score b{font-size:40px;color:var(--fg);font-variant-numeric:tabular-nums}
-.quiz-missed{text-align:left;border-top:1px solid var(--line);padding-top:14px;margin-bottom:18px;display:grid;gap:8px}
-.quiz-missed p{margin:0;font-size:12px;color:var(--muted)}
-.quiz-missed div{display:flex;flex-direction:column;gap:2px;font-size:14px}
-.quiz-missed b{font-size:12.5px;color:var(--accent)}
-.quiz-perfect{color:var(--ok);font-weight:700}
-.quiz-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.quiz-actions button{padding:12px;border-radius:10px;font-size:14px}
-@media (max-width:560px){.quiz{padding:18px 16px}.quiz-opts{grid-template-columns:1fr}.quiz-q{font-size:16.5px}}
+/* 나라별 선지: 떠올릴 답(나라 + 왕/인물) — 문장 뒤 작은 칩 */
+.who{display:inline-block;margin:3px 0 0;padding:1px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:11.5px;font-weight:500;letter-spacing:.01em;vertical-align:1px}
+.tx .who{margin-left:6px}
+.quiz-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:13.5px;font-weight:700;white-space:nowrap}
+
+/* 암기 퀴즈 (전체 화면) */
+.qz-page{word-break:keep-all;max-width:640px;margin:0 auto;padding-block:8px 40px}
+.qz-back{font-size:13px;color:var(--muted);padding:6px 0}
+.qz-back:hover{color:var(--fg)}
+.qz-setup{margin-top:18px;padding:32px 30px;background:var(--surface);border-radius:20px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 18px 40px -26px rgba(30,40,70,.35)}
+.qz-setup h2{margin:0;font-family:var(--display);font-weight:normal;font-size:34px}
+.qz-sub{margin:6px 0 0;color:var(--muted);font-size:14px}
+.qz-label{margin:26px 0 10px;font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--muted)}
+.qz-chips{display:flex;flex-wrap:wrap;gap:8px}
+.qz-chip{padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:14px;color:var(--fg)}
+.qz-chip:hover{border-color:var(--muted)}
+.qz-chip[aria-pressed="true"]{background:var(--fg);border-color:var(--fg);color:var(--bg);font-weight:700}
+.qz-hint{margin:8px 0 0;font-size:12px;color:var(--muted)}
+.qz-n button{padding:8px 16px;font-size:13.5px}
+.qz-start{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;margin-top:30px;padding:15px;border-radius:14px;background:var(--accent);color:var(--surface);font-size:16px;font-weight:700}
+.qz-start span{font-size:12px;font-weight:400;opacity:.8}
+.qz-start:disabled{opacity:.4;cursor:not-allowed}
+.qz-head{display:flex;align-items:center;gap:12px}
+.qz-scope{font-family:var(--display);font-size:19px}
+.qz-prog{margin-left:auto;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.qz-bar{height:6px;margin:10px 0 18px;border-radius:3px;background:var(--line);overflow:hidden}
+.qz-bar i{display:block;height:100%;border-radius:3px;background:var(--accent);transition:width .3s ease}
+.qz-card{padding:30px 28px 26px;background:var(--surface);border-radius:20px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 18px 40px -26px rgba(30,40,70,.35)}
+.qz-q{margin:0 0 26px;font-size:21px;font-weight:700;line-height:1.5;letter-spacing:-.01em;word-break:keep-all;text-wrap:pretty}
+.qz-opts{display:grid;gap:10px}
+.qz-opt{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;background:var(--bg);font-size:16px;text-align:left;border:1.5px solid transparent;transition:border-color .12s,background .12s,transform .12s}
+.qz-opt:hover{border-color:var(--accent);background:var(--surface)}
+.qz-num{flex:none;width:26px;height:26px;display:grid;place-items:center;border-radius:8px;background:var(--surface);color:var(--muted);font-size:13px;font-weight:700;box-shadow:inset 0 0 0 1px var(--line)}
+.qz-card.answered .qz-opt{cursor:default}
+.qz-card.answered .qz-opt:hover{border-color:transparent;background:var(--bg)}
+.qz-opt.ok,.qz-card.answered .qz-opt.ok:hover{background:var(--ok-soft);border-color:var(--ok);color:var(--ok);font-weight:700}
+.qz-opt.ok .qz-num{background:var(--ok);color:var(--surface);box-shadow:none}
+.qz-opt.bad,.qz-card.answered .qz-opt.bad:hover{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.qz-opt.bad .qz-num{background:var(--bad);color:var(--surface);box-shadow:none}
+.qz-opt.dim{opacity:.45}
+.qz-fb{margin-top:22px}
+.qz-verdict{margin:0 0 8px;font-size:16px;font-weight:700}
+.qz-verdict.o{color:var(--ok)} .qz-verdict.x{color:var(--bad)}
+.qz-exp{margin:0 0 20px;padding:14px 16px;border-radius:12px;background:var(--bg);font-size:14px;line-height:1.65}
+.qz-next{width:100%;padding:14px;border-radius:14px;background:var(--fg);color:var(--bg);font-size:15px;font-weight:700}
+.qz-end{text-align:center}
+.qz-score{margin:6px 0 4px;display:flex;justify-content:center;align-items:baseline;gap:6px}
+.qz-score b{font-family:var(--display);font-weight:normal;font-size:64px;line-height:1}
+.qz-score span{font-size:18px;color:var(--muted)}
+.qz-missed{margin:24px 0 4px;text-align:left}
+.qz-missed .qz-label{margin-top:0}
+.qz-miss{display:flex;flex-direction:column;gap:4px;padding:12px 0;border-top:1px solid var(--line);font-size:14.5px}
+.qz-miss b{align-self:flex-start;padding:1px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:500}
+.qz-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
+.qz-actions button{padding:14px;border-radius:14px;font-size:14.5px}
+@media (max-width:560px){
+  .qz-setup{padding:24px 20px}
+  .qz-card{padding:22px 18px 20px}
+  .qz-q{font-size:18px;margin-bottom:20px}
+  .qz-opt{font-size:15px;padding:13px 14px}
+}
 .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:10px;align-items:start}
 .ph{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-width:0}
 .ph-btn{display:block;width:100%;text-align:left}

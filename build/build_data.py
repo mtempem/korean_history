@@ -89,11 +89,15 @@ def main(src=os.path.join(SRC, 'explain'), answers_path=os.path.join(SRC, 'answe
     who = {}
     who_dir = os.path.join(os.path.dirname(concepts_dir), 'who')
     for fn in sorted(os.listdir(who_dir)) if os.path.isdir(who_dir) else []:
-        if fn.endswith('.json'):
+        if fn.endswith('.json') and fn != 'quizq.json':  # quizq.json은 퀴즈 문장이라 라벨이 아니다
             who.update(json.load(open(os.path.join(who_dir, fn))))
     with open(os.path.join(ROOT, 'data', 'concepts.js'), 'w') as f:
         f.write('HQ.rep=' + json.dumps(rep, ensure_ascii=False, separators=(',', ':')) + ';\n')
         f.write('HQ.who=' + json.dumps(who, ensure_ascii=False, separators=(',', ':')) + ';\n')
+        # 퀴즈용 문장(정답 이름을 지운 문장, null이면 퀴즈에서 제외)
+        qq_path = os.path.join(who_dir, 'quizq.json')
+        qq = json.load(open(qq_path)) if os.path.exists(qq_path) else {}
+        f.write('HQ.qq=' + json.dumps(qq, ensure_ascii=False, separators=(',', ':')) + ';\n')
     answers = json.load(open(answers_path))
     os.makedirs(os.path.join(ROOT, 'data'), exist_ok=True)
     report = []
