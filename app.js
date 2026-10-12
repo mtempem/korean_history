@@ -725,8 +725,8 @@
   const ERAS_TL = [
     { name: '고대 초기', simple: [['선사', ['구석기', '신석기', '청동기', '철기']], ['고조선', ['단군왕검', '위만', '우거왕']], ['부여', []], ['옥저', []], ['동예', []], ['삼한', []]] },
     { name: '삼국', from: -50, to: 700, tick: 50, countries: ['고구려', '백제', '가야', '신라'] },
-    { name: '남북국', from: 650, to: 950, tick: 20, countries: ['통일신라', '발해', '후삼국', '고려'] },
-    { name: '고려', from: 890, to: 1400, tick: 50, countries: ['통일신라', '발해', '후삼국', '고려'] },
+    { name: '남북국', from: 650, to: 940, tick: 20, countries: ['통일신라', '발해', '후삼국'] },
+    { name: '고려', from: 890, to: 1400, tick: 50, countries: ['후삼국', '고려'] },
     { name: '조선', from: 1390, to: 1870, tick: 50, countries: ['조선'] },
     { name: '근현대', from: 1860, to: 2025, tick: 10, countries: ['개항기', '일제강점기', '현대'] },
   ].map(e => e.countries ? { ...e, lanes: e.countries.map(c => [c, KINGS[c].filter(([, a, b]) => b >= e.from && a <= e.to)]) } : e);
