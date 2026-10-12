@@ -787,7 +787,13 @@
       </div>
       <section class="nb-main" id="nb-main">
         <p class="nb-where">${esc(cc)}</p>
-        <h2 class="nb-head">${esc(kk === ALL ? cc + ' 전체' : kk)}</h2>
+        <div class="nb-headrow">
+          <h2 class="nb-head">${esc(kk === ALL ? cc + ' 전체' : kk)}</h2>
+          ${related.length ? `<div class="nb-relwrap">
+            <button class="nb-relbtn" aria-expanded="false" aria-controls="nb-relpop">기출 선지 ${related.length}개 ▾</button>
+            <div class="nb-relpop" id="nb-relpop" hidden><ul>${related.map(it => `<li><span class="freq${it.refs.length >= 3 ? ' hot' : ''}">×${it.refs.length}</span>${esc(it.t)}</li>`).join('')}</ul></div>
+          </div>` : ''}
+        </div>
         <div class="nb-tools" role="toolbar" aria-label="서식">
           <button class="nb-b" data-cmd="bold" title="굵게 (Ctrl+B)"><b>B</b></button>
           <span class="nb-sep"></span>
@@ -795,7 +801,6 @@
           <span class="nb-saved" id="nb-saved"></span>
         </div>
         <div class="nb-paper"><div class="nb-editor" id="nb-editor" contenteditable="true" spellcheck="false" data-ph="강의를 들으며 ${esc(kk === ALL ? cc : kk)}에 대해 필기하세요. 글자를 선택하고 색을 고르거나 Ctrl+B로 굵게 할 수 있어요.">${cleanHTML(items[cur]?.body || '')}</div></div>
-        ${related.length ? `<details class="nb-rel"><summary>기출 선지 ${related.length}개</summary><ul>${related.map(it => `<li><span class="freq${it.refs.length >= 3 ? ' hot' : ''}">×${it.refs.length}</span>${esc(it.t)}</li>`).join('')}</ul></details>` : ''}
       </section>
     </div>`;
 
@@ -841,6 +846,15 @@
         persist();
       }
     });
+    // 기출 선지: 제목 오른쪽 버튼으로 여닫는 목록
+    const rb = app.querySelector('.nb-relbtn'), rp = app.querySelector('#nb-relpop');
+    if (rb) {
+      const setOpen = o => { rp.hidden = !o; rb.setAttribute('aria-expanded', o); };
+      rb.addEventListener('click', e => { e.stopPropagation(); setOpen(rp.hidden); });
+      const away = e => { if (!rp.isConnected) return document.removeEventListener('click', away); if (!e.target.closest('.nb-relwrap')) setOpen(false); };
+      document.addEventListener('click', away);
+      rp.addEventListener('keydown', e => { if (e.key === 'Escape') { setOpen(false); rb.focus(); } });
+    }
     const tl = app.querySelector('.tl');
     tl.addEventListener('click', e => {
       const er = e.target.closest('[data-era]');
