@@ -790,8 +790,8 @@
         <div class="nb-headrow">
           <h2 class="nb-head">${esc(kk === ALL ? cc + ' 전체' : kk)}</h2>
           ${related.length ? `<div class="nb-relwrap">
-            <button class="nb-relbtn" aria-expanded="false" aria-controls="nb-relpop">기출 선지 ${related.length}개 ▾</button>
-            <div class="nb-relpop" id="nb-relpop" hidden><ul>${related.map(it => `<li><span class="freq${it.refs.length >= 3 ? ' hot' : ''}">×${it.refs.length}</span>${esc(it.t)}</li>`).join('')}</ul></div>
+            <button class="nb-relbtn" aria-expanded="false" aria-controls="nb-relpop">기출 선지 <b>${related.length}</b><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3"/></svg></button>
+            <div class="nb-relpop" id="nb-relpop" hidden><ul>${related.map(it => `<li><span>${esc(it.t)}</span><small>${it.refs.length}회</small></li>`).join('')}</ul></div>
           </div>` : ''}
         </div>
         <div class="nb-tools" role="toolbar" aria-label="서식">
