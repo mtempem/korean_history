@@ -9,7 +9,7 @@
 | 경로 | 내용 |
 |---|---|
 | `index.html` | 화면 틀과 스타일 |
-| `app.js` | 회차별 풀이 / 나라별 선지 / 문화유산 갤러리 로직 |
+| `app.js` | 회차별 풀이 / 나라별 선지·퀴즈 / 문화유산 갤러리 / 필기장(시대별 타임라인) 로직 |
 | `cloud.js`, `config.js` | Supabase 로그인·동기화(선택) |
 | `supabase/schema.sql` | Supabase 테이블·보안 규칙 |
 | `data/exam-NN.js` | 회차별 문항·정답·선지 해설 (`HQ.add({...})`) |
@@ -38,6 +38,7 @@
 
 1. [supabase.com](https://supabase.com)에서 가입하고 새 프로젝트를 만든다(무료 요금제로 충분).
 2. 대시보드 **SQL Editor**에 `supabase/schema.sql` 내용을 붙여 넣고 Run. → `progress` 테이블과 "자기 기록만 읽고 쓰기" 보안 규칙이 만들어진다.
+   필기장도 동기화하려면 `supabase/notebook.sql`도 같은 방법으로 Run한다(`notebook` 테이블).
 3. **Authentication > URL Configuration**: Site URL은 `https://mtempem.github.io/korean_history/`, Redirect URLs에는 `https://mtempem.github.io/korean_history/**`와 `http://localhost:8765/**`를 넣는다.
 4. **Project Settings > API**의 Project URL과 `anon` public 키를 `config.js`에 넣는다. `service_role` 키는 절대 넣지 말 것.
 5. Google 로그인 켜기

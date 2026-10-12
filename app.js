@@ -671,24 +671,173 @@
     draw();
   }
 
+  /* ---------- 필기장 (영상 강의 등 자유 필기) ---------- */
+  // 저장 형태: store 'notebook' = { id: { title, body(HTML), at(수정 시각 ms) } }
+  const NB_COLORS = [['기본', ''], ['빨강', '#d6332a'], ['파랑', '#2f6fdb'], ['초록', '#1f8a4c'], ['주황', '#d97706']];
+  const notebook = {
+    all: () => store.get('notebook', {}),
+    save(id, v) { const a = notebook.all(); a[id] = { ...a[id], ...v, at: Date.now() }; store.set('notebook', a); HQCloud.noteChanged?.(id); },
+    remove(id) { const a = notebook.all(); delete a[id]; store.set('notebook', a); HQCloud.noteChanged?.(id); },
+  };
+  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  // 붙여넣기·불러온 내용에서 허용한 서식(굵게·색·줄바꿈·목록)만 남긴다
+  function cleanHTML(html) {
+    const doc = new DOMParser().parseFromString('<div>' + (html || '') + '</div>', 'text/html');
+    const walk = node => {
+      for (const ch of [...node.childNodes]) {
+        if (ch.nodeType === 3) continue;
+        if (ch.nodeType !== 1) { ch.remove(); continue; }
+        walk(ch);
+        const tag = ch.tagName.toLowerCase();
+        if (['b', 'strong', 'br', 'div', 'p', 'ul', 'ol', 'li'].includes(tag)) { [...ch.attributes].forEach(a => ch.removeAttribute(a.name)); continue; }
+        if (tag === 'span' || tag === 'font') {
+          const color = ch.style?.color || ch.getAttribute('color') || '';
+          const bold = /bold|[6-9]00/.test(ch.style?.fontWeight || '');
+          const span = doc.createElement(bold ? 'b' : 'span');
+          if (color) span.style.color = color;
+          span.append(...ch.childNodes); ch.replaceWith(span); continue;
+        }
+        ch.replaceWith(...ch.childNodes);
+      }
+    };
+    const root = doc.body.firstChild; walk(root);
+    return root.innerHTML;
+  }
+
+  // 시대별 타임라인: 나라마다 왕(근현대는 시기·정부)을 순서대로. 첫 칸 '전체'는 왕과 상관없는 나라 전반 필기
+  const TIMELINE = [
+    ['선사·고대', [
+      ['선사', ['구석기', '신석기', '청동기', '철기']],
+      ['고조선', ['단군왕검', '위만', '우거왕']],
+      ['부여', []], ['옥저', []], ['동예', []], ['삼한', []],
+      ['고구려', ['동명왕', '태조왕', '고국천왕', '동천왕', '미천왕', '고국원왕', '소수림왕', '광개토대왕', '장수왕', '문자왕', '영양왕', '영류왕', '보장왕']],
+      ['백제', ['온조왕', '고이왕', '근초고왕', '침류왕', '비유왕', '개로왕', '문주왕', '동성왕', '무령왕', '성왕', '무왕', '의자왕']],
+      ['가야', []],
+      ['신라', ['내물왕', '눌지왕', '소지왕', '지증왕', '법흥왕', '진흥왕', '진평왕', '선덕여왕', '진덕여왕']],
+    ]],
+    ['남북국·고려', [
+      ['통일신라', ['태종무열왕', '문무왕', '신문왕', '성덕왕', '경덕왕', '혜공왕', '원성왕', '헌덕왕', '흥덕왕', '진성여왕', '경순왕']],
+      ['발해', ['고왕', '무왕', '문왕', '선왕']],
+      ['후삼국', ['견훤', '궁예']],
+      ['고려', ['태조', '광종', '경종', '성종', '목종', '현종', '문종', '숙종', '예종', '인종', '의종', '명종', '신종', '고종', '원종', '충렬왕', '충선왕', '공민왕', '우왕', '창왕', '공양왕']],
+    ]],
+    ['조선', [
+      ['조선', ['태조', '정종', '태종', '세종', '문종', '단종', '세조', '성종', '연산군', '중종', '명종', '선조', '광해군', '인조', '효종', '현종', '숙종', '경종', '영조', '정조', '순조', '헌종', '철종']],
+    ]],
+    ['근현대', [
+      ['개항기', ['흥선대원군', '고종', '순종']],
+      ['일제강점기', ['1910년대', '1920년대', '1930년대 이후']],
+      ['현대', ['미군정', '이승만 정부', '허정 과도 정부', '장면 내각', '박정희 정부', '최규하 정부', '전두환 정부', '노태우 정부', '김영삼 정부', '김대중 정부', '노무현 정부', '이명박 정부', '박근혜 정부', '문재인 정부', '윤석열 정부']],
+    ]],
+  ];
+  const ALL = '전체';
+  const noteId = (c, k) => c + '|' + (k || ALL);
+
+  function renderNotes() {
+    if (!index) buildIndex();
+    const items = notebook.all();
+    let cur = store.get('notebookCur', '');
+    if (!/\|/.test(cur || '')) cur = noteId('신라', '지증왕');
+    const [cc, kk] = cur.split('|');
+    const hasNote = id => !!(items[id] && (items[id].body || '').replace(/<[^>]+>/g, '').trim());
+    // 이 왕(라벨) 때의 기출 선지
+    const related = index.filter(it => !it.photo && it.c === cc && (kk === ALL ? !it.who : it.who === kk))
+      .sort((a, b) => b.refs.length - a.refs.length);
+    const countries = TIMELINE.flatMap(([, cs]) => cs);
+    const kingsOf = c => (countries.find(([x]) => x === c) || [c, []])[1];
+    const chip = (c, k) => { const id = noteId(c, k); return `<button class="tl-k${hasNote(id) ? ' has' : ''}" data-id="${esc(id)}" aria-current="${id === cur}">${esc(k || ALL)}</button>`; };
+
+    app.innerHTML = `<div class="nb">
+      <nav class="tl" aria-label="시대별 타임라인">${TIMELINE.map(([era, cs]) => `
+        <p class="tl-era">${era}</p>
+        ${cs.map(([c, ks]) => `<div class="tl-c"><span class="tl-name">${c}</span><div class="tl-ks">${chip(c, '')}${ks.map(k => chip(c, k)).join('')}</div></div>`).join('')}`).join('')}
+      </nav>
+      <div class="tl-m">
+        <select class="nb-sel" id="tl-c" aria-label="나라">${countries.map(([c]) => `<option${c === cc ? ' selected' : ''}>${c}</option>`).join('')}</select>
+        <div class="tl-mks">${chip(cc, '')}${kingsOf(cc).map(k => chip(cc, k)).join('')}</div>
+      </div>
+      <section class="nb-main">
+        <p class="nb-where">${esc(cc)}</p>
+        <h2 class="nb-head">${esc(kk === ALL ? cc + ' 전체' : kk)}</h2>
+        <div class="nb-tools" role="toolbar" aria-label="서식">
+          <button class="nb-b" data-cmd="bold" title="굵게 (Ctrl+B)"><b>B</b></button>
+          <span class="nb-sep"></span>
+          ${NB_COLORS.map(([n, c]) => `<button class="nb-color" data-color="${c}" title="${n}" aria-label="글자색 ${n}"><i style="${c ? 'background:' + c : ''}"></i></button>`).join('')}
+          <span class="nb-saved" id="nb-saved"></span>
+        </div>
+        <div class="nb-editor" id="nb-editor" contenteditable="true" spellcheck="false" data-ph="강의를 들으며 ${esc(kk === ALL ? cc : kk)}에 대해 필기하세요. 글자를 선택하고 색을 고르거나 Ctrl+B로 굵게 할 수 있어요.">${cleanHTML(items[cur]?.body || '')}</div>
+        ${related.length ? `<details class="nb-rel"><summary>기출 선지 ${related.length}개</summary><ul>${related.map(it => `<li><span class="freq${it.refs.length >= 3 ? ' hot' : ''}">×${it.refs.length}</span>${esc(it.t)}</li>`).join('')}</ul></details>` : ''}
+      </section>
+    </div>`;
+
+    const ed = app.querySelector('#nb-editor'), saved = app.querySelector('#nb-saved');
+    try { document.execCommand('styleWithCSS', false, true); } catch {}
+    let t;
+    const persist = () => {
+      clearTimeout(t); saved.textContent = '';
+      t = setTimeout(() => {
+        notebook.save(cur, { title: kk, body: ed.innerHTML });
+        saved.textContent = '저장됨';
+        const has = !!ed.textContent.trim();
+        app.querySelectorAll(`.tl-k[data-id="${CSS.escape(cur)}"]`).forEach(b => b.classList.toggle('has', has));
+      }, 400);
+    };
+    ed.addEventListener('input', persist);
+    ed.addEventListener('paste', e => {
+      e.preventDefault();
+      const html = e.clipboardData.getData('text/html'), text = e.clipboardData.getData('text/plain');
+      document.execCommand('insertHTML', false, html ? cleanHTML(html) : esc(text).replace(/\n/g, '<br>'));
+    });
+    ed.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') { e.preventDefault(); document.execCommand('bold'); persist(); }
+    });
+    // 툴바: 누를 때 편집 영역의 선택이 풀리지 않도록 mousedown 기본 동작을 막는다
+    const tools = app.querySelector('.nb-tools');
+    tools.addEventListener('mousedown', e => { if (e.target.closest('[data-cmd],[data-color]')) e.preventDefault(); });
+    tools.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.cmd === 'bold') { ed.focus(); document.execCommand('bold'); persist(); }
+      if (b.dataset.color !== undefined) {
+        ed.focus();
+        if (b.dataset.color) document.execCommand('foreColor', false, b.dataset.color);
+        else {
+          // '기본'은 색 지정을 지워 테마 글자색을 따르게 한다
+          document.execCommand('foreColor', false, '#010101');
+          ed.querySelectorAll('[style]').forEach(n => { if (/rgb\(1, 1, 1\)|#010101/i.test(n.style.color)) n.style.removeProperty('color'); if (!n.getAttribute('style')) n.removeAttribute('style'); });
+          ed.querySelectorAll('font[color="#010101"]').forEach(n => n.replaceWith(...n.childNodes));
+        }
+        persist();
+      }
+    });
+    const open = id => { store.set('notebookCur', id); renderNotes(); };
+    app.querySelector('.nb').addEventListener('click', e => { const b = e.target.closest('.tl-k'); if (b) open(b.dataset.id); });
+    app.querySelector('#tl-c').addEventListener('change', e => open(noteId(e.target.value, '')));
+    // 지금 고른 왕이 타임라인에서 보이게
+    app.querySelector('.tl .tl-k[aria-current="true"]')?.scrollIntoView({ block: 'center' });
+    app.querySelector('.tl-mks .tl-k[aria-current="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+    window.scrollTo(0, 0);
+  }
+
   /* ---------- 탭 ---------- */
-  const tabR = document.getElementById('tab-round'), tabC = document.getElementById('tab-country');
+  const tabR = document.getElementById('tab-round'), tabC = document.getElementById('tab-country'), tabN = document.getElementById('tab-notes');
+  const VIEWS = ['round', 'country', 'notes'];
   function go(v) {
     quizOn = false;
     state.view = v; store.set('view', v);
-    tabR.setAttribute('aria-selected', v === 'round'); tabC.setAttribute('aria-selected', v === 'country');
-    v === 'round' ? renderRound() : renderCountry();
+    tabR.setAttribute('aria-selected', v === 'round'); tabC.setAttribute('aria-selected', v === 'country'); tabN.setAttribute('aria-selected', v === 'notes');
+    v === 'round' ? renderRound() : v === 'notes' ? renderNotes() : renderCountry();
     // 로그인 직후 주소에 붙어 오는 정보(#access_token 등)는 건드리지 않는다
     if (location.hash !== '#' + v && !/access_token|error_description/.test(location.hash)) history.replaceState(null, '', '#' + v);
   }
   tabR.onclick = () => { go('round'); window.scrollTo(0, 0); };
   tabC.onclick = () => { go('country'); window.scrollTo(0, 0); };
+  tabN.onclick = () => { go('notes'); window.scrollTo(0, 0); };
   window.addEventListener('hashchange', () => {
     const v = location.hash.slice(1);
-    if ((v === 'round' || v === 'country') && v !== state.view) go(v);
+    if (VIEWS.includes(v) && v !== state.view) go(v);
   });
   const h = location.hash.slice(1);
-  go(h === 'country' || h === 'round' ? h : state.view);
+  go(VIEWS.includes(h) ? h : VIEWS.includes(state.view) ? state.view : 'round');
   // 로그인 후 서버 기록을 받아오면 지금 화면을 다시 그린다
   HQCloud.init({ onPulled: () => { const y = scrollY; go(state.view); scrollTo(0, y); } });
 })();

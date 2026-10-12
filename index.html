@@ -275,6 +275,41 @@ main{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
 .variants div{padding-left:10px;border-left:2px solid var(--line)}
 .empty{padding:40px 0;color:var(--muted);text-align:center}
 .mcsel{display:none}
+.t-short{display:none}
+/* 필기장: 왼쪽 시대별 타임라인 + 오른쪽 편집 */
+.nb{display:grid;grid-template-columns:260px minmax(0,1fr);gap:24px;max-width:1120px;margin:0 auto}
+.tl{position:sticky;top:76px;align-self:start;max-height:calc(100vh - 96px);overflow:auto;padding-right:6px;scrollbar-width:thin}
+.tl-era{margin:18px 0 6px;font-size:11.5px;font-weight:700;letter-spacing:.08em;color:var(--muted)}
+.tl-era:first-child{margin-top:0}
+.tl-c{position:relative;padding:4px 0 10px 16px;border-left:2px solid var(--line)}
+.tl-c::before{content:"";position:absolute;left:-6px;top:9px;width:10px;height:10px;border-radius:50%;background:var(--bg);border:2px solid var(--muted)}
+.tl-name{display:block;margin-bottom:6px;font-family:var(--display);font-size:17px}
+.tl-ks{display:flex;flex-wrap:wrap;gap:4px}
+.tl-k{padding:4px 9px;border-radius:999px;font-size:12.5px;color:var(--muted);background:var(--surface);border:1px solid var(--line);white-space:nowrap}
+.tl-k:hover{color:var(--fg);border-color:var(--muted)}
+.tl-k.has{color:var(--fg);font-weight:700;border-color:var(--fg)}
+.tl-k[aria-current="true"]{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.tl-m{display:none}
+.nb-sel{display:block}
+.nb-main{min-width:0;background:var(--surface);border-radius:16px;padding:24px 30px 30px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 18px 40px -28px rgba(30,40,70,.3)}
+.nb-where{margin:0;font-size:12.5px;color:var(--muted)}
+.nb-head{margin:2px 0 6px;font:normal 30px var(--display)}
+.nb-tools{position:sticky;top:64px;z-index:5;display:flex;align-items:center;gap:6px;padding:8px 0;margin-bottom:12px;background:var(--surface);border-bottom:1px solid var(--line)}
+.nb-tools button{display:grid;place-items:center;width:32px;height:32px;border-radius:8px}
+.nb-tools button:hover{background:var(--bg)}
+.nb-b{font-size:15px}
+.nb-sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+.nb-color i{display:block;width:16px;height:16px;border-radius:50%;background:var(--fg);box-shadow:0 0 0 2px var(--surface),0 0 0 3px var(--line)}
+.nb-saved{margin-left:auto;font-size:12px;color:var(--muted)}
+.nb-editor{min-height:50vh;outline:none;font-size:15.5px;line-height:1.85;word-break:keep-all;overflow-wrap:anywhere}
+.nb-editor:empty::before{content:attr(data-ph);color:var(--muted);opacity:.7}
+.nb-editor b,.nb-editor strong{font-weight:700}
+.nb-editor ul,.nb-editor ol{padding-left:22px}
+.nb-rel{margin-top:22px;border-top:1px solid var(--line);padding-top:12px}
+.nb-rel summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted)}
+.nb-rel ul{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.nb-rel li{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.5}
+.nb-rel .freq{flex:none}
 /* 나라별 선지: 떠올릴 답(나라 + 왕/인물) — 문장 뒤 작은 칩 */
 .who{display:inline-block;margin:3px 0 0;padding:1px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:11.5px;font-weight:500;letter-spacing:.01em;vertical-align:1px}
 .tx .who{margin-left:6px}
@@ -347,6 +382,17 @@ main{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
 .ph.open{grid-column:span 2}
 
 @media (max-width:760px){
+  .t-long{display:none}
+  .t-short{display:inline}
+  .nb{grid-template-columns:minmax(0,1fr);gap:12px}
+  .tl{display:none}
+  .tl-m{display:grid;gap:8px}
+  .nb-sel{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);font:inherit}
+  .tl-mks{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+  .tl-mks .tl-k{padding:6px 12px;font-size:13px}
+  .nb-main{padding:18px 16px 22px}
+  .nb-head{font-size:25px}
+  .nb-tools{top:58px}
   /* 모바일 상단: 두 줄 로고 · 메뉴 토글 · 저장하기를 한 줄에 */
   .bar{display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:8px;padding-block:8px}
   .brand{margin:0;font-size:15px;line-height:1.15}
@@ -369,8 +415,9 @@ main{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
   <div class="bar">
     <div class="brand"><span>한능검</span> <span>기출노트</span><small>60–79회</small></div>
     <div class="tabs" role="tablist">
-      <button role="tab" id="tab-round" aria-selected="true">회차별 풀이</button>
-      <button role="tab" id="tab-country" aria-selected="false">나라별 선지</button>
+      <button role="tab" id="tab-round" aria-selected="true"><span class="t-long">회차별 풀이</span><span class="t-short">회차별</span></button>
+      <button role="tab" id="tab-country" aria-selected="false"><span class="t-long">나라별 선지</span><span class="t-short">나라별</span></button>
+      <button role="tab" id="tab-notes" aria-selected="false">필기</button>
     </div>
     <div class="acct" id="acct" hidden></div>
   </div>

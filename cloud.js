@@ -7,6 +7,8 @@ window.HQCloud = (() => {
   const LIB = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
   let sb = null, user = null, onPulled = () => {}, timer = null, state = 'off';
   const queue = new Map();
+  const noteQueue = new Set();  // 필기장(notebook 테이블)에 올릴 필기 id
+  let notebookReady = true;     // notebook 테이블이 아직 없으면 false (SQL 실행 전)
 
   const ls = k => { try { return JSON.parse(localStorage.getItem('hq:' + k)); } catch { return null; } };
   const lsSet = (k, v) => { try { localStorage.setItem('hq:' + k, JSON.stringify(v)); } catch {} };
@@ -26,7 +28,28 @@ window.HQCloud = (() => {
     status('saving');
   }
 
+  // 필기장: 바뀐 필기만 올리고, 내용이 비면 지운다
+  function noteChanged(id) {
+    if (!user || !notebookReady) return;
+    noteQueue.add(id);
+    clearTimeout(timer); timer = setTimeout(flush, 700);
+  }
+  async function flushNotes() {
+    const ids = [...noteQueue]; noteQueue.clear();
+    if (!ids.length || !user || !notebookReady) return;
+    const nb = ls('notebook') || {};
+    const isEmpty = id => !(nb[id]?.body || '').replace(/<[^>]+>/g, '').trim();
+    const full = ids.filter(id => !isEmpty(id)).map(id => ({ user_id: user.id, id, body: nb[id].body, updated_at: new Date(nb[id].at || Date.now()).toISOString() }));
+    if (full.length) { const { error } = await sb.from('notebook').upsert(full); if (error) throw error; }
+    for (const id of ids.filter(isEmpty)) {
+      const { error } = await sb.from('notebook').delete().match({ user_id: user.id, id }); if (error) throw error;
+    }
+  }
+
   async function flush() {
+    try { await flushNotes(); } catch (e) {
+      if (e?.code === '42P01' || e?.code === 'PGRST205') notebookReady = false; else { console.error('[필기 동기화 실패]', e); status('error'); }
+    }
     const items = [...queue.values()]; queue.clear();
     if (!items.length || !user) return;
     const rows = items.map(([r, q]) => rowFor(r, q));
@@ -67,7 +90,17 @@ window.HQCloud = (() => {
     for (const [r, a] of Object.entries(byRound)) { lsSet('ans:' + r, a.ans); lsSet('graded:' + r, a.gr); }
     lsSet('notes', notes);
     local.filter(([r, q]) => !remote.has(r + '-' + q)).forEach(([r, q]) => queue.set(r + '-' + q, [r, q]));
-    queue.size ? flush() : status('saved');
+    // 필기장: 서버 것을 반영하고, 이 브라우저에만 있던 필기는 올린다
+    const r = await sb.from('notebook').select('id,body,updated_at');
+    if (r.error) { notebookReady = false; console.info('[필기장] notebook 테이블이 없어 이 브라우저에만 저장해요. supabase/notebook.sql 을 실행하세요.'); }
+    else {
+      notebookReady = true;
+      const nb = ls('notebook') || {}, remoteIds = new Set(r.data.map(x => x.id));
+      for (const x of r.data) nb[x.id] = { ...nb[x.id], body: x.body, at: Date.parse(x.updated_at) };
+      lsSet('notebook', nb);
+      Object.keys(nb).filter(id => !remoteIds.has(id) && (nb[id].body || '').replace(/<[^>]+>/g, '').trim()).forEach(id => noteQueue.add(id));
+    }
+    queue.size || noteQueue.size ? flush() : status('saved');
     onPulled();
   }
 
@@ -152,5 +185,5 @@ window.HQCloud = (() => {
     addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
   }
 
-  return { init, changed, get enabled() { return enabled; } };
+  return { init, changed, noteChanged, get enabled() { return enabled; } };
 })();
