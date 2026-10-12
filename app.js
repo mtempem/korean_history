@@ -800,6 +800,9 @@
     </div>`;
 
     const ed = app.querySelector('#nb-editor'), saved = app.querySelector('#nb-saved');
+    // 메모지가 화면 아래 끝까지 오도록 최소 높이를 맞춘다(내용이 더 길면 그만큼 늘어남)
+    const fit = () => { if (!ed.isConnected) return removeEventListener('resize', fit); ed.style.minHeight = Math.max(320, innerHeight - (ed.getBoundingClientRect().top + scrollY) - 24) + 'px'; };
+    fit(); addEventListener('resize', fit);
     try { document.execCommand('styleWithCSS', false, true); } catch {}
     let t;
     const persist = () => {

@@ -327,7 +327,7 @@ button.tl-lh:hover small{color:var(--fg)}
 /* 필기장 본문: 문제 메모와 같은 줄 있는 노란 메모지 (줄 간격 32px에 글줄을 맞춤) */
 .nb-paper{position:relative;margin-top:14px}
 .nb-paper::before{content:"";position:absolute;z-index:1;top:-9px;left:50%;width:90px;height:20px;transform:translateX(-50%) rotate(-2deg);background:var(--accent-soft);opacity:.85}
-.nb-editor{min-height:60vh;padding:16px 22px 32px;outline:none;font-family:var(--display);font-size:18px;line-height:32px;letter-spacing:.01em;word-break:keep-all;overflow-wrap:anywhere;color:var(--memo-ink);
+.nb-editor{min-height:320px;padding:16px 22px 32px;outline:none;font-family:var(--display);font-size:18px;line-height:32px;letter-spacing:.01em;word-break:keep-all;overflow-wrap:anywhere;color:var(--memo-ink);
   background-color:var(--memo);background-image:repeating-linear-gradient(to bottom,transparent 0 31px,var(--memo-line) 31px 32px);background-position:0 16px;background-attachment:local;
   box-shadow:0 1px 1px rgba(0,0,0,.06),0 10px 20px -12px rgba(60,45,0,.45)}
 .nb-editor:empty::before{content:attr(data-ph);color:var(--memo-ink);opacity:.45}
