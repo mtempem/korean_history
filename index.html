@@ -295,15 +295,16 @@ button.tl-lh:hover small{color:var(--fg)}
 .tl-lane{position:relative}
 .tl-lane .tl-track{margin-left:6px;margin-right:2px}
 .tl-grid{position:absolute;left:-6px;right:-2px;height:0;border-top:1px dashed var(--line)}
-.tl-lane .tl-track::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line)}
-.tl-b{position:absolute;left:0;right:0;display:flex;flex-direction:column;justify-content:center;padding:2px 8px;border-radius:8px;background:var(--bg);border:1px solid var(--line);text-align:left;overflow:hidden;line-height:1.2}
+/* 왕: 카드 대신 라인 위의 재위 구간(세로 막대) + 옆에 이름 */
+.tl-lane .tl-track::before{content:"";position:absolute;left:1px;top:0;bottom:0;width:1px;background:var(--line)}
+.tl-b{position:absolute;left:0;right:0;display:flex;flex-direction:column;justify-content:flex-start;padding:0 0 0 10px;background:none;border:0;border-left:3px solid color-mix(in srgb,var(--muted) 45%,transparent);border-radius:0;text-align:left;overflow:hidden;line-height:1.25;color:var(--fg)}
 .tl-b b{font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tl-b small{font-size:10px;color:var(--muted)}
-.tl-b:hover{border-color:var(--muted);z-index:1}
-.tl-b.has{border-color:var(--fg)}
+.tl-b:hover{border-left-color:var(--muted);z-index:1}
+.tl-b.has{border-left-color:var(--fg)}
 .tl-b.has b{font-weight:700}
-.tl-b[aria-current="true"]{background:var(--fg);border-color:var(--fg);color:var(--bg);z-index:1}
-.tl-b[aria-current="true"] small{color:var(--bg);opacity:.75}
+.tl-b[aria-current="true"]{border-left-color:var(--accent);z-index:1}
+.tl-b[aria-current="true"] b{color:var(--accent);font-weight:700}
 .tl-simple{display:grid;gap:14px;padding:18px}
 .tl-sg p{margin:0 0 6px;font:normal 17px var(--display)}
 .tl-sg div{display:flex;flex-wrap:wrap;gap:6px}
@@ -410,7 +411,7 @@ button.tl-lh:hover small{color:var(--fg)}
   .tl-scroll{max-height:60vh}
   .tl-chart{grid-template-columns:44px repeat(var(--lanes),minmax(70px,1fr))}
   .tl-axis .tl-track span{font-size:10px;right:6px}
-  .tl-b{padding:2px 6px}
+  .tl-b{padding-left:7px}
   .tl-b b{font-size:11.5px}
   .nb-main{padding:18px 16px 22px}
   .nb-head{font-size:25px}
