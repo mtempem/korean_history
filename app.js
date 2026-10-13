@@ -737,9 +737,12 @@
   }
   function setupTyping(root, head, paper, key, title, html) {
     const L = typeLines(title, html);
-    const saved = store.get('type3:' + key, null);
-    const typed = L.map((l, i) => (saved?.v === 2 && saved.typed?.[i]) || '');
-    let at = Math.min(saved?.v === 2 ? saved.at : 0, L.length - 1), composing = false, enterAfter = false;
+    // 노트 내용이 바뀌면 쳐 둔 기록은 버린다
+    const sig = [...L.map(l => l.chars.map(c => c.c).join('')).join('\n')].reduce((h, c) => (h * 31 + c.codePointAt(0)) | 0, 7);
+    let saved = store.get('type3:' + key, null);
+    if (saved?.sig !== sig) saved = null;
+    const typed = L.map((l, i) => saved?.typed?.[i] || '');
+    let at = Math.min(saved?.at ?? 0, L.length - 1), composing = false, enterAfter = false;
     // 지금 줄 바로 아래에 실제 입력 칸을 둔다(친 글자가 그대로 보이게)
     const inp = document.createElement('input');
     inp.className = 'tp-input'; inp.setAttribute('aria-label', '정리노트 따라 치기');
@@ -764,7 +767,7 @@
       bar.querySelector('.tp-stat').textContent = `${lines} / ${L.length}줄${all ? ` · 정확도 ${Math.round(ok / all * 100)}%` : ''}${lines === L.length ? ' · 완료!' : ''}`;
     };
     let st;
-    const persist = () => { clearTimeout(st); st = setTimeout(() => store.set('type3:' + key, { v: 2, at, typed }), 300); };
+    const persist = () => { clearTimeout(st); st = setTimeout(() => store.set('type3:' + key, { sig, at, typed }), 300); };
     const mount = () => {
       inp.classList.toggle('tp-input-head', at === 0);
       (at === 0 ? head.closest('.nb-headrow') : els[at]).after(inp);
