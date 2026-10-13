@@ -204,12 +204,12 @@
     body += reveal;
     body += `<ol class="choices">${q.choices.map((c, i) => {
       const n = i + 1, ok = q.a.includes(n);
-      const cls = ['ch', ok ? 'correct' : 'wrong', pick === n ? 'sel' : '', review ? 'open' : ''].join(' ');
+      const cls = ['ch', ok ? 'correct' : 'wrong', pick === n ? 'sel' : '', done ? 'open' : ''].join(' ');
       const verdict = done ? `<span class="verdict ${ok ? 'o' : 'x'}">${ok ? '정답' : '오답'}</span>` : '';
       return `<li class="${cls}" data-i="${n}">
         <div class="row">
           <button class="pick" aria-label="${n}번 선택">${n}</button>
-          <button class="ctext" aria-expanded="${review}"><span class="tx">${c.ph
+          <button class="ctext" aria-expanded="${done}"><span class="tx">${c.ph
             ? `<img class="cthumb" loading="lazy" width="${c.pw || ''}" height="${c.phh || ''}" src="${esc(imgSrc(c.ph))}" alt="${n}번 사진"><span class="phname">${esc(photoName(c.t))}</span>`
             : esc(c.t)}</span><span class="caret" aria-hidden="true">▶</span></button>
         </div>
@@ -246,6 +246,8 @@
       card.classList.add('done', markClass(q, store.get(answersKey(state.round), {})[q.n]).trim());
       card.querySelectorAll('.ch').forEach(x => {
         const ok = x.classList.contains('correct');
+        // 채점하면 다섯 선지 해설을 모두 펼친다
+        x.classList.add('open'); x.querySelector('.ctext').setAttribute('aria-expanded', true);
         x.querySelector('.vd').innerHTML = `<span class="verdict ${ok ? 'o' : 'x'}">${ok ? '정답' : '오답'}</span>`;
       });
       card.querySelector('.reveal').hidden = false;
