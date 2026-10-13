@@ -785,22 +785,26 @@
     };
     const goLine = i => {
       const prev = at; at = Math.max(0, Math.min(L.length - 1, i));
-      inp.value = typed[at]; composing = false;
+      composing = false; show();
       draw(prev); draw(at); mount(); stats(); persist();
       inp.focus({ preventScroll: true });
       const r = inp.getBoundingClientRect();
       if (r.bottom > innerHeight - 40 || r.top < 80) inp.scrollIntoView({ block: 'center', behavior: 'smooth' });
     };
-    L.forEach((_, i) => draw(i)); stats(); mount(); inp.value = typed[at];
-    // 스페이스(또는 ->)를 친 자리가 자동 글자 자리면 입력 칸에도 제 글자로 바꿔 넣는다
-    const fill = () => {
-      let t = inp.value, p = 0;
+    L.forEach((_, i) => draw(i)); stats(); mount();
+    // 입력 칸에도 줄 앞 · 를 미리 넣어 둔다. typed에는 그 뒤에 친 것만 담는다
+    const pfx = () => L[at].pre.map(k => L[at].chars[k].c).join('');
+    const show = () => { inp.value = pfx() + typed[at]; inp.setSelectionRange(inp.value.length, inp.value.length); };
+    const typedPart = () => { const p = pfx(), v = inp.value; return v.startsWith(p) ? v.slice(p.length) : v.replace(/^·\s?/, ''); };
+    // 스페이스(또는 ->)를 친 자리면 그 자리의 제 글자로 바꿔 넣는다
+    const fill = t => {
+      let p = 0;
       for (const tk of L[at].toks) {
         if (p >= t.length) break;
         if (tk.alt && !t.startsWith(tk.keys, p)) { const a = tk.alt.find(a => t.startsWith(a, p)); if (a) t = t.slice(0, p) + tk.keys + t.slice(p + a.length); }
         p += tk.keys.length;
       }
-      if (t !== inp.value) { inp.value = t; inp.setSelectionRange(t.length, t.length); }
+      return t;
     };
     const next = end => {
       if (typed[at].length < L[at].len) return;
@@ -808,14 +812,19 @@
       if (n != null) goLine(n); else if (end && onEnd) onEnd();
     };
     const sync = () => {
+      let t = typedPart();
       if (!composing) {
         // 다 친 줄 끝에서 스페이스 → 다음 줄
-        const len = L[at].len, v = inp.value;
-        if (v.length > len && v.endsWith(' ') && step(at + 1, 1) != null) { typed[at] = v.slice(0, len); inp.value = typed[at]; return next(); }
-        fill();
+        const len = L[at].len;
+        if (t.length > len && t.endsWith(' ') && step(at + 1, 1) != null) { typed[at] = t.slice(0, len); return next(); }
+        t = fill(t);
       }
-      typed[at] = inp.value; draw(at); stats(); persist();
+      const changed = pfx() + t !== inp.value;
+      typed[at] = t;
+      if (changed && !composing) show();
+      draw(at); stats(); persist();
     };
+    show();
     inp.addEventListener('input', e => { composing = !!e.isComposing; sync(); });
     inp.addEventListener('compositionend', () => {
       composing = false; sync();
@@ -826,8 +835,10 @@
         e.preventDefault();
         if (e.isComposing || e.keyCode === 229) { enterAfter = true; return; }
         next(true);
-      } else if (e.key === 'Backspace' && !inp.value && !e.isComposing && step(at - 1, -1) != null) {
-        e.preventDefault(); goLine(step(at - 1, -1));
+      } else if (e.key === 'Backspace' && !e.isComposing && inp.selectionStart <= pfx().length && inp.selectionEnd <= pfx().length) {
+        // 미리 찍힌 · 는 지우지 않고, 빈 줄이면 앞 줄로
+        e.preventDefault();
+        if (!typed[at] && step(at - 1, -1) != null) goLine(step(at - 1, -1));
       }
     });
     inp.addEventListener('focus', () => root.classList.add('tp-on'));
@@ -842,7 +853,7 @@
     });
     if (focusNow) inp.focus({ preventScroll: true });
     bar.querySelector('.tp-reset').addEventListener('click', () => {
-      L.forEach((l, i) => { typed[i] = l.fixed ? full(l) : ''; }); at = 0; inp.value = '';
+      L.forEach((l, i) => { typed[i] = l.fixed ? full(l) : ''; }); at = 0; show();
       L.forEach((_, i) => draw(i)); stats(); mount(); persist(); inp.focus({ preventScroll: true });
     });
   }
