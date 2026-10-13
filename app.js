@@ -705,7 +705,7 @@
       while (chars.at(-1)?.c === ' ') chars.pop();
       if (chars.length) rows.push(chars);
     }
-    return rows.map(chars => {
+    return rows.map((chars, ri) => {
       const toks = [], ok = c => TYPABLE.test(c);
       for (let i = 0; i < chars.length; i++) {
         const c = chars[i].c;
@@ -720,7 +720,9 @@
         toks.push({ idx, keys: idx.map(k => chars[k].c).join(''), alt: [' '], auto: true });
         i = j;
       }
-      return { chars, toks, len: toks.reduce((n, t) => n + t.keys.length, 0) };
+      // [흐름] 같은 소제목 줄은 미리 채워 두고 건너뛴다
+      const fixed = ri > 0 && /^\[[^\]]*\]$/.test(chars.map(c => c.c).join(''));
+      return { chars, toks, fixed, len: toks.reduce((n, t) => n + t.keys.length, 0) };
     });
   }
   // 친 글자열을 토큰과 맞춰 본다: ok / bad / cmp(조합 중·덜 침) / todo
@@ -743,8 +745,11 @@
     const sig = [...L.map(l => l.chars.map(c => c.c).join('')).join('\n')].reduce((h, c) => (h * 31 + c.codePointAt(0)) | 0, 7);
     let saved = store.get('type3:' + key, null);
     if (saved?.sig !== sig) saved = null;
-    const typed = L.map((l, i) => saved?.typed?.[i] || '');
-    let at = Math.min(saved?.at ?? 0, L.length - 1), composing = false, enterAfter = false;
+    const full = l => l.toks.map(t => t.keys).join('');
+    const typed = L.map((l, i) => l.fixed ? full(l) : saved?.typed?.[i] || '');
+    // 소제목 줄을 건너뛰어 d 방향으로 가장 가까운 칠 줄
+    const step = (i, d) => { while (L[i]?.fixed) i += d; return L[i] ? i : null; };
+    let at = step(Math.min(saved?.at ?? 0, L.length - 1), 1) ?? 0, composing = false, enterAfter = false;
     // 지금 줄 바로 아래에 실제 입력 칸을 둔다(친 글자가 그대로 보이게)
     const inp = document.createElement('input');
     inp.className = 'tp-input'; inp.setAttribute('aria-label', '정리노트 따라 치기');
@@ -765,8 +770,9 @@
     };
     const stats = () => {
       let ok = 0, all = 0, lines = 0;
-      L.forEach((l, i) => { const r = typeMarks(l, typed[i], false); ok += r.ok; all += r.ok + r.bad; if (typed[i].length >= l.len) lines++; });
-      bar.querySelector('.tp-stat').textContent = `${lines} / ${L.length}줄${all ? ` · 정확도 ${Math.round(ok / all * 100)}%` : ''}${lines === L.length ? ' · 완료!' : ''}`;
+      const real = L.filter(l => !l.fixed);
+      L.forEach((l, i) => { if (l.fixed) return; const r = typeMarks(l, typed[i], false); ok += r.ok; all += r.ok + r.bad; if (typed[i].length >= l.len) lines++; });
+      bar.querySelector('.tp-stat').textContent = `${lines} / ${real.length}줄${all ? ` · 정확도 ${Math.round(ok / all * 100)}%` : ''}${lines === real.length ? ' · 완료!' : ''}`;
     };
     let st;
     const persist = () => { clearTimeout(st); st = setTimeout(() => store.set('type3:' + key, { sig, at, typed }), 300); };
@@ -793,19 +799,20 @@
       }
       if (t !== inp.value) { inp.value = t; inp.setSelectionRange(t.length, t.length); }
     };
+    const next = () => { const n = step(at + 1, 1); if (typed[at].length >= L[at].len && n != null) goLine(n); };
     const sync = () => { if (!composing) fill(); typed[at] = inp.value; draw(at); stats(); persist(); };
     inp.addEventListener('input', e => { composing = !!e.isComposing; sync(); });
     inp.addEventListener('compositionend', () => {
       composing = false; sync();
-      if (enterAfter) { enterAfter = false; setTimeout(() => { if (typed[at].length >= L[at].len && at < L.length - 1) goLine(at + 1); }, 0); }
+      if (enterAfter) { enterAfter = false; setTimeout(next, 0); }
     });
     inp.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         e.preventDefault();
         if (e.isComposing || e.keyCode === 229) { enterAfter = true; return; }
-        if (typed[at].length >= L[at].len && at < L.length - 1) goLine(at + 1);
-      } else if (e.key === 'Backspace' && !inp.value && at > 0 && !e.isComposing) {
-        e.preventDefault(); goLine(at - 1);
+        next();
+      } else if (e.key === 'Backspace' && !inp.value && !e.isComposing && step(at - 1, -1) != null) {
+        e.preventDefault(); goLine(step(at - 1, -1));
       }
     });
     inp.addEventListener('focus', () => root.classList.add('tp-on'));
@@ -814,11 +821,12 @@
     root.addEventListener('click', e => {
       if (e.target === inp) return;
       const ln = e.target.closest('[data-line]');
-      if (ln && +ln.dataset.line !== at) return goLine(+ln.dataset.line);
+      const to = ln && (step(+ln.dataset.line, 1) ?? step(+ln.dataset.line, -1));
+      if (ln && to !== at) return goLine(to);
       if (ln || e.target.closest('.nb-sum')) inp.focus({ preventScroll: true });
     });
     bar.querySelector('.tp-reset').addEventListener('click', () => {
-      typed.fill(''); at = 0; inp.value = '';
+      L.forEach((l, i) => { typed[i] = l.fixed ? full(l) : ''; }); at = 0; inp.value = '';
       L.forEach((_, i) => draw(i)); stats(); mount(); persist(); inp.focus({ preventScroll: true });
     });
   }
