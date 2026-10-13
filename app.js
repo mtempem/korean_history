@@ -682,8 +682,9 @@
   const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   // 붙여넣기·불러온 내용에서 허용한 서식(굵게·색·줄바꿈·목록)만 남긴다
   /* ---------- 정리노트 타자 연습: 회색 글씨를 제목부터 한 줄씩 따라 친다 ---------- */
-  // 내용(한글·숫자)만 친다. ·, ※, →, 괄호·쉼표 같은 기호와 한자·영어는 자동으로 채운다
-  const TYPABLE = /[\uAC00-\uD7A3\u3131-\u318E0-9 ]/;
+  // 한글·숫자·키보드 기호는 그대로 친다(→는 ->). 한자·영어·※·· 같은 글자는 스페이스 한 번으로 채운다
+  const TYPABLE = /[가-힣ㄱ-ㆎ0-9 !-\/:-@\[-`{-~→←↔]/;
+  const KEYS = { '→': '->', '←': '<-', '↔': '<->' };
   function typeLines(title, html) {
     const box = document.createElement('div'); box.innerHTML = cleanHTML(html);
     const rows = [[...title].map(c => ({ c }))];
@@ -703,92 +704,104 @@
       if (chars.length) rows.push(chars);
     }
     return rows.map(chars => {
-      let want = ''; const pos = [];
-      chars.forEach((ch, i) => {
-        ch.auto = !TYPABLE.test(ch.c) || (ch.c === ' ' && (!want || want.endsWith(' ')));
-        if (!ch.auto) { ch.k = want.length; pos.push(i); want += ch.c; }
-      });
-      while (want.endsWith(' ')) { want = want.slice(0, -1); const ch = chars[pos.pop()]; ch.auto = true; delete ch.k; }
-      // 자동 기호는 앞에 있는 글자 수만큼 쳤을 때 채워진다
-      let n = 0; chars.forEach(ch => { if (ch.auto) ch.before = n; else n++; });
-      return { chars, want };
+      const toks = [], ok = c => TYPABLE.test(c);
+      for (let i = 0; i < chars.length; i++) {
+        if (ok(chars[i].c)) { toks.push({ idx: [i], keys: KEYS[chars[i].c] || chars[i].c }); continue; }
+        // 칠 수 없는 글자 묶음(사이 띄어쓰기 포함)과 앞뒤 띄어쓰기 한 칸을 스페이스 한 번으로
+        let j = i;
+        while (j + 1 < chars.length && (!ok(chars[j + 1].c) || (chars[j + 1].c === ' ' && chars[j + 2] && !ok(chars[j + 2].c)))) j++;
+        const idx = []; for (let k = i; k <= j; k++) idx.push(k);
+        if (toks.at(-1)?.keys === ' ' && !toks.at(-1).auto) idx.unshift(...toks.pop().idx);
+        if (chars[j + 1]?.c === ' ') idx.push(++j);
+        toks.push({ idx, keys: ' ', auto: true });
+        i = j;
+      }
+      return { chars, toks, len: toks.reduce((n, t) => n + t.keys.length, 0) };
     });
+  }
+  // 친 글자열을 토큰과 맞춰 본다: ok / bad / cmp(조합 중·덜 침) / todo
+  function typeMarks(L, t, composing) {
+    let p = 0, ok = 0, bad = 0;
+    const marks = L.toks.map((tk, n) => {
+      if (p >= t.length) return 'todo';
+      const seg = t.slice(p, p + tk.keys.length); p += tk.keys.length;
+      if (seg.length < tk.keys.length || (composing && p >= t.length)) return 'cmp';
+      if (seg === tk.keys) { ok++; return 'ok'; }
+      bad++; return 'bad';
+    });
+    return { marks, ok, bad };
   }
   function setupTyping(root, head, paper, key, title, html) {
     const L = typeLines(title, html);
     const saved = store.get('type:' + key, null);
-    const typed = L.map((_, i) => (saved?.typed?.[i] || '').slice(0, L[i].want.length + 2));
-    let at = Math.min(saved?.at ?? 0, L.length - 1), composing = false, enterAfter = false;
-    const ta = document.createElement('textarea');
-    ta.className = 'tp-input'; ta.setAttribute('aria-label', '정리노트 따라 치기');
-    ta.autocomplete = 'off'; ta.spellcheck = false; ta.setAttribute('autocapitalize', 'off'); ta.setAttribute('autocorrect', 'off');
-    paper.append(ta);
-    const bar = root.querySelector('.tp-bar');
-    const els = [head, ...L.slice(1).map(() => { const d = document.createElement('div'); d.className = 'tp-line'; return d; })];
-    paper.querySelector('.nb-type').append(...els.slice(1));
+    const typed = L.map((l, i) => (saved?.v === 2 && saved.typed?.[i]) || '');
+    let at = Math.min(saved?.v === 2 ? saved.at : 0, L.length - 1), composing = false, enterAfter = false;
+    // 지금 줄 바로 아래에 실제 입력 칸을 둔다(친 글자가 그대로 보이게)
+    const inp = document.createElement('input');
+    inp.className = 'tp-input'; inp.setAttribute('aria-label', '정리노트 따라 치기');
+    inp.autocomplete = 'off'; inp.spellcheck = false; inp.setAttribute('autocapitalize', 'off'); inp.setAttribute('autocorrect', 'off');
+    const bar = root.querySelector('.tp-bar'), body = paper.querySelector('.nb-type');
+    const els = [head, ...L.slice(1).map(() => { const d = document.createElement('div'); d.className = 'tp-line'; body.append(d); return d; })];
     els.forEach((el, i) => { el.dataset.line = i; });
     const charHTML = (ch, cls) => `<span class="${cls}"${ch.b || ch.color ? ` style="${ch.b ? 'font-weight:700;' : ''}${ch.color ? 'color:' + ch.color : ''}"` : ''}>${esc(ch.c)}</span>`;
     const draw = i => {
-      const { chars, want } = L[i], t = typed[i], cur = i === at, done = !cur && t.length >= want.length;
-      let out = '';
-      chars.forEach(ch => {
-        let cls;
-        if (ch.auto) cls = done || t.length > ch.before || (ch.before === want.length && t.length >= want.length && want) ? 'tp-ok' : 'tp-todo';
-        else if (ch.k < t.length) cls = cur && composing && ch.k === t.length - 1 ? 'tp-cmp' : t[ch.k] === ch.c ? 'tp-ok' : 'tp-bad';
-        else cls = 'tp-todo';
-        if (cur && !ch.auto && ch.k === t.length) cls += ' tp-at';
-        out += charHTML(ch, cls);
-      });
-      if (cur && t.length >= want.length) out += '<span class="tp-at tp-end"></span>';
-      els[i].innerHTML = out;
+      const l = L[i], cur = i === at, t = typed[i];
+      const { marks } = typeMarks(l, t, cur && composing);
+      const cls = new Array(l.chars.length).fill('tp-todo');
+      let caret = -1;
+      l.toks.forEach((tk, n) => { tk.idx.forEach(k => { cls[k] = 'tp-' + marks[n]; }); if (caret < 0 && marks[n] === 'todo') caret = tk.idx[0]; });
+      if (cur && caret >= 0) cls[caret] += ' tp-at';
+      els[i].innerHTML = l.chars.map((ch, k) => charHTML(ch, cls[k])).join('');
       els[i].classList.toggle('tp-cur', cur);
     };
     const stats = () => {
       let ok = 0, all = 0, lines = 0;
-      L.forEach((l, i) => { const t = typed[i]; for (let k = 0; k < Math.min(t.length, l.want.length); k++) { all++; if (t[k] === l.want[k]) ok++; } if (t.length >= l.want.length) lines++; });
+      L.forEach((l, i) => { const r = typeMarks(l, typed[i], false); ok += r.ok; all += r.ok + r.bad; if (typed[i].length >= l.len) lines++; });
       bar.querySelector('.tp-stat').textContent = `${lines} / ${L.length}줄${all ? ` · 정확도 ${Math.round(ok / all * 100)}%` : ''}${lines === L.length ? ' · 완료!' : ''}`;
     };
     let st;
-    const persist = () => { clearTimeout(st); st = setTimeout(() => store.set('type:' + key, { at, typed }), 300); };
-    // 입력 칸을 지금 줄 위치로 옮겨 모바일에서 화면이 엉뚱하게 튀지 않게 한다
-    const place = () => { const r = els[at].getBoundingClientRect(), p = paper.getBoundingClientRect(); ta.style.top = Math.max(0, r.top - p.top) + 'px'; };
+    const persist = () => { clearTimeout(st); st = setTimeout(() => store.set('type:' + key, { v: 2, at, typed }), 300); };
+    const mount = () => {
+      inp.classList.toggle('tp-input-head', at === 0);
+      (at === 0 ? head.closest('.nb-headrow') : els[at]).after(inp);
+    };
     const goLine = i => {
       const prev = at; at = Math.max(0, Math.min(L.length - 1, i));
-      ta.value = typed[at]; composing = false;
-      draw(prev); draw(at); place(); stats(); persist();
+      inp.value = typed[at]; composing = false;
+      draw(prev); draw(at); mount(); stats(); persist();
+      inp.focus({ preventScroll: true });
+      const r = inp.getBoundingClientRect();
+      if (r.bottom > innerHeight - 40 || r.top < 80) inp.scrollIntoView({ block: 'center', behavior: 'smooth' });
     };
-    L.forEach((_, i) => draw(i)); stats(); place();
-    ta.addEventListener('input', e => {
-      typed[at] = ta.value.replace(/\n/g, '');
-      composing = !!e.isComposing;
-      draw(at); stats(); persist();
+    L.forEach((_, i) => draw(i)); stats(); mount(); inp.value = typed[at];
+    const sync = () => { typed[at] = inp.value; draw(at); stats(); persist(); };
+    inp.addEventListener('input', e => { composing = !!e.isComposing; sync(); });
+    inp.addEventListener('compositionend', () => {
+      composing = false; sync();
+      if (enterAfter) { enterAfter = false; setTimeout(() => { if (typed[at].length >= L[at].len && at < L.length - 1) goLine(at + 1); }, 0); }
     });
-    ta.addEventListener('compositionend', () => {
-      composing = false; typed[at] = ta.value.replace(/\n/g, ''); draw(at); stats(); persist();
-      if (enterAfter) { enterAfter = false; setTimeout(() => { if (typed[at].length >= L[at].want.length && at < L.length - 1) goLine(at + 1); }, 0); }
-    });
-    ta.addEventListener('keydown', e => {
+    inp.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         e.preventDefault();
         if (e.isComposing || e.keyCode === 229) { enterAfter = true; return; }
-        if (typed[at].length >= L[at].want.length && at < L.length - 1) goLine(at + 1);
-      } else if (e.key === 'Backspace' && !ta.value && at > 0 && !e.isComposing) {
+        if (typed[at].length >= L[at].len && at < L.length - 1) goLine(at + 1);
+      } else if (e.key === 'Backspace' && !inp.value && at > 0 && !e.isComposing) {
         e.preventDefault(); goLine(at - 1);
       }
     });
-    ta.addEventListener('focus', () => root.classList.add('tp-on'));
-    ta.addEventListener('blur', () => root.classList.remove('tp-on'));
+    inp.addEventListener('focus', () => root.classList.add('tp-on'));
+    inp.addEventListener('blur', () => root.classList.remove('tp-on'));
     // 아무 줄이나 누르면 그 줄부터 친다
     root.addEventListener('click', e => {
+      if (e.target === inp) return;
       const ln = e.target.closest('[data-line]');
-      if (ln && +ln.dataset.line !== at) goLine(+ln.dataset.line);
-      if (ln || e.target.closest('.nb-sum')) ta.focus({ preventScroll: true });
+      if (ln && +ln.dataset.line !== at) return goLine(+ln.dataset.line);
+      if (ln || e.target.closest('.nb-sum')) inp.focus({ preventScroll: true });
     });
     bar.querySelector('.tp-reset').addEventListener('click', () => {
-      typed.fill(''); const prev = at; at = 0; ta.value = '';
-      L.forEach((_, i) => draw(i)); draw(prev); stats(); place(); persist(); ta.focus({ preventScroll: true });
+      typed.fill(''); at = 0; inp.value = '';
+      L.forEach((_, i) => draw(i)); stats(); mount(); persist(); inp.focus({ preventScroll: true });
     });
-    ta.value = typed[at];
   }
 
   function cleanHTML(html) {
@@ -921,7 +934,7 @@
           ${NB_COLORS.map(([n, c]) => `<button class="nb-color" data-color="${c}" title="${n}" aria-label="글자색 ${n}"><i style="${c ? 'background:' + c : ''}"></i></button>`).join('')}
           <span class="nb-saved" id="nb-saved"></span>
         </div>
-        ${mode === 'sum' && SUM[cur] ? `<div class="tp-bar"><span class="tp-stat"></span><span class="tp-hint">한글·숫자만 따라 치세요 · Enter로 다음 줄</span><button class="tp-reset">처음부터</button></div>` : ''}
+        ${mode === 'sum' && SUM[cur] ? `<div class="tp-bar"><span class="tp-stat"></span><span class="tp-hint">회색 글씨를 따라 치세요 · 한자·영어·※는 스페이스 · → 는 -> · Enter로 다음 줄</span><button class="tp-reset">처음부터</button></div>` : ''}
         ${mode === 'sum' ? `<div class="nb-paper nb-sum"><div class="nb-editor nb-read${SUM[cur] ? ' nb-type' : ''}" id="nb-editor">${SUM[cur] ? '' : '<div class="nb-none">이 칸의 정리노트는 아직 없어요.</div>'}</div></div>` : ''}
         <div class="nb-paper"${mode === 'sum' ? ' hidden' : ''}><div class="nb-editor" id="nb-editor-mine" contenteditable="true" spellcheck="false" data-ph="강의를 들으며 ${esc(isEra ? kk + ' 시대' : kk === ALL ? cc : kk)}에 대해 필기하세요. 글자를 선택하고 색을 고르거나 Ctrl+B로 굵게 할 수 있어요.">${cleanHTML(items[cur]?.body || '')}</div></div>
       </section>
