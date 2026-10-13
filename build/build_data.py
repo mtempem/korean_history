@@ -162,6 +162,13 @@ def main(src=os.path.join(SRC, 'explain'), answers_path=os.path.join(SRC, 'answe
         data = {'round': int(r), 'questions': qs}
         with open(os.path.join(ROOT, 'data', f'exam-{r}.js'), 'w') as f:
             f.write('HQ.add(' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ');\n')
+    # 정리노트(build/src/summary/S*.json = {"나라|왕": HTML}) → data/summary.js
+    sum_dir = os.path.join(SRC, 'summary'); summ = {}
+    for fn in sorted(os.listdir(sum_dir)) if os.path.isdir(sum_dir) else []:
+        if re.fullmatch(r'S\d+\.json', fn):
+            summ.update(json.load(open(os.path.join(sum_dir, fn))))
+    with open(os.path.join(ROOT, 'data', 'summary.js'), 'w') as f:
+        f.write('HQ.sum=' + json.dumps(summ, ensure_ascii=False, separators=(',', ':')) + ';\n')
     print('\n'.join(report) or 'OK')
 
 

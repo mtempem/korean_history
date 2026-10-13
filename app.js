@@ -734,8 +734,10 @@
   const noteId = (c, k) => c + '|' + (k || ALL);
   const yearLabel = y => y < 0 ? '기원전 ' + -y : y + '';
   // 필기가 있는 나라|왕 → 그 왕이 들어 있는 시대 탭
+  const SUM = HQ.sum || {};
   const eraOf = id => {
     const [c, k] = id.split('|');
+    if (c === '시대') return k;
     return ERAS_TL.find(e => (e.lanes || e.simple).some(([lc, ks]) => lc === c && (k === ALL || ks.some(x => (Array.isArray(x) ? x[0] : x) === k))))?.name || '삼국';
   };
 
@@ -746,8 +748,12 @@
     if (!/\|/.test(cur || '')) cur = noteId('신라', '지증왕');
     const [cc, kk] = cur.split('|');
     const era = ERAS_TL.find(e => e.name === store.get('notebookEra', eraOf(cur))) || ERAS_TL[1];
+    // 내 필기 / 정리노트(읽기 전용 요약)
+    const mode = store.get('notebookMode', 'mine');
+    const isEra = cc === '시대';
+    const title = isEra ? kk + ' 시대 전체' : kk === ALL ? cc + ' 전체' : kk;
     const hasNote = id => !!(items[id] && (items[id].body || '').replace(/<[^>]+>/g, '').trim());
-    const related = index.filter(it => !it.photo && it.c === cc && (kk === ALL ? !it.who : it.who === kk))
+    const related = isEra ? [] : index.filter(it => !it.photo && it.c === cc && (kk === ALL ? !it.who : it.who === kk))
       .sort((a, b) => b.refs.length - a.refs.length);
     const cls = id => `${hasNote(id) ? ' has' : ''}`;
 
@@ -782,31 +788,38 @@
 
     app.innerHTML = `<div class="nb">
       <div class="tl">
+        <div class="nb-mode" role="group" aria-label="보기">
+          <button data-mode="mine" aria-pressed="${mode === 'mine'}">내 필기</button>
+          <button data-mode="sum" aria-pressed="${mode === 'sum'}">정리노트</button>
+        </div>
         <div class="seg tl-eras" role="group" aria-label="시대">${ERAS_TL.map(e => `<button data-era="${e.name}" aria-pressed="${e === era}">${e.name}</button>`).join('')}</div>
+        <button class="tl-eraall${cls(noteId('시대', era.name))}" data-id="${esc(noteId('시대', era.name))}" aria-current="${cur === noteId('시대', era.name)}">${era.name} 시대 전체</button>
         <div class="tl-scroll">${chart}</div>
       </div>
       <section class="nb-main" id="nb-main">
-        <p class="nb-where">${esc(cc)}</p>
+        <p class="nb-where">${esc(isEra ? '시대' : cc)}${mode === 'sum' ? ' · 정리노트' : ''}</p>
         <div class="nb-headrow">
-          <h2 class="nb-head">${esc(kk === ALL ? cc + ' 전체' : kk)}</h2>
+          <h2 class="nb-head">${esc(title)}</h2>
           ${related.length ? `<div class="nb-relwrap">
             <button class="nb-relbtn" aria-expanded="false" aria-controls="nb-relpop">기출 선지 <b>${related.length}</b><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3"/></svg></button>
             <div class="nb-relpop" id="nb-relpop" hidden><ul>${related.map(it => `<li><span>${esc(it.t)}</span><small>${it.refs.length}회</small></li>`).join('')}</ul></div>
           </div>` : ''}
         </div>
-        <div class="nb-tools" role="toolbar" aria-label="서식">
+        <div class="nb-tools" role="toolbar" aria-label="서식"${mode === 'sum' ? ' hidden' : ''}>
           <button class="nb-b" data-cmd="bold" title="굵게 (Ctrl+B)"><b>B</b></button>
           <span class="nb-sep"></span>
           ${NB_COLORS.map(([n, c]) => `<button class="nb-color" data-color="${c}" title="${n}" aria-label="글자색 ${n}"><i style="${c ? 'background:' + c : ''}"></i></button>`).join('')}
           <span class="nb-saved" id="nb-saved"></span>
         </div>
-        <div class="nb-paper"><div class="nb-editor" id="nb-editor" contenteditable="true" spellcheck="false" data-ph="강의를 들으며 ${esc(kk === ALL ? cc : kk)}에 대해 필기하세요. 글자를 선택하고 색을 고르거나 Ctrl+B로 굵게 할 수 있어요.">${cleanHTML(items[cur]?.body || '')}</div></div>
+        ${mode === 'sum' ? `<div class="nb-paper nb-sum"><div class="nb-editor nb-read" id="nb-editor">${SUM[cur] ? cleanHTML(SUM[cur]) : '<div class="nb-none">이 칸의 정리노트는 아직 없어요.</div>'}</div></div>` : ''}
+        <div class="nb-paper"${mode === 'sum' ? ' hidden' : ''}><div class="nb-editor" id="nb-editor-mine" contenteditable="true" spellcheck="false" data-ph="강의를 들으며 ${esc(isEra ? kk + ' 시대' : kk === ALL ? cc : kk)}에 대해 필기하세요. 글자를 선택하고 색을 고르거나 Ctrl+B로 굵게 할 수 있어요.">${cleanHTML(items[cur]?.body || '')}</div></div>
       </section>
     </div>`;
 
-    const ed = app.querySelector('#nb-editor'), saved = app.querySelector('#nb-saved');
+    const ed = app.querySelector('#nb-editor-mine'), saved = app.querySelector('#nb-saved');
+    const shown = mode === 'sum' ? app.querySelector('#nb-editor') : ed;
     // 메모지가 화면 아래 끝까지 오도록 최소 높이를 맞춘다(내용이 더 길면 그만큼 늘어남)
-    const fit = () => { if (!ed.isConnected) return removeEventListener('resize', fit); ed.style.minHeight = Math.max(320, innerHeight - (ed.getBoundingClientRect().top + scrollY) - 24) + 'px'; };
+    const fit = () => { if (!shown.isConnected) return removeEventListener('resize', fit); shown.style.minHeight = Math.max(320, innerHeight - (shown.getBoundingClientRect().top + scrollY) - 24) + 'px'; };
     fit(); addEventListener('resize', fit);
     try { document.execCommand('styleWithCSS', false, true); } catch {}
     let t;
@@ -857,6 +870,8 @@
     }
     const tl = app.querySelector('.tl');
     tl.addEventListener('click', e => {
+      const md = e.target.closest('[data-mode]');
+      if (md) { store.set('notebookMode', md.dataset.mode); return renderNotes(app.querySelector('.tl-scroll').scrollTop); }
       const er = e.target.closest('[data-era]');
       if (er) { store.set('notebookEra', er.dataset.era); return renderNotes(); }
       const b = e.target.closest('[data-id]'); if (!b) return;
