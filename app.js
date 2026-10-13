@@ -903,12 +903,14 @@
   // 시대 탭: 그 기간에 걸친 나라를 모두 라인으로 둔다(라인에는 기간 안의 왕만)
   const ERAS_TL = [
     { name: '고대 초기', simple: [['선사', ['구석기', '신석기', '청동기', '철기']], ['고조선', ['단군왕검', '위만', '우거왕']], ['부여', []], ['옥저', []], ['동예', []], ['삼한', []]] },
-    { name: '삼국', from: -50, to: 700, tick: 50, countries: ['고구려', '백제', '가야', '신라'] },
-    { name: '남북국', from: 650, to: 940, tick: 20, countries: ['통일신라', '발해', '후삼국'] },
+    // join: 시대 경계에서 끊기지 않게 이웃 나라 왕을 같은 칸에 이어 붙인다(백제 멸망 때 신라 무열왕 등)
+    { name: '삼국', from: -50, to: 700, tick: 50, countries: ['고구려', '백제', '가야', '신라'], join: { 신라: ['신라', '통일신라'] } },
+    { name: '남북국', from: 650, to: 940, tick: 20, countries: ['통일신라', '발해', '후삼국'], join: { 통일신라: ['신라', '통일신라'] } },
     { name: '고려', from: 890, to: 1400, tick: 50, countries: ['후삼국', '고려'] },
     { name: '조선', from: 1390, to: 1870, tick: 50, countries: ['조선'] },
     { name: '근현대', from: 1860, to: 2025, tick: 10, countries: ['개항기', '일제강점기', '현대'] },
-  ].map(e => e.countries ? { ...e, lanes: e.countries.map(c => [c, KINGS[c].filter(([, a, b]) => b >= e.from && a <= e.to)]) } : e);
+  ].map(e => e.countries ? { ...e, lanes: e.countries.map(c => [c, (e.join?.[c] || [c])
+    .flatMap(src => KINGS[src].map(([k, a, b]) => [k, a, b, src])).filter(([, a, b]) => b >= e.from && a <= e.to)]) } : e);
   const ALL = '전체';
   const noteId = (c, k) => c + '|' + (k || ALL);
   const yearLabel = y => y < 0 ? '기원전 ' + -y : y + '';
@@ -917,12 +919,12 @@
   const eraOf = id => {
     const [c, k] = id.split('|');
     if (c === '시대') return k;
-    return ERAS_TL.find(e => (e.lanes || e.simple).some(([lc, ks]) => lc === c && (k === ALL || ks.some(x => (Array.isArray(x) ? x[0] : x) === k))))?.name || '삼국';
+    return ERAS_TL.find(e => (e.lanes || e.simple).some(([lc, ks]) => lc === c && (k === ALL || ks.some(x => Array.isArray(x) ? x[3] === c && x[0] === k : x === k))))?.name || '삼국';
   };
 
   // 정리노트 넘김 순서: 시대마다 [시대 전체 → 나라 전체 → 왕들]
   const NOTE_ORDER = ERAS_TL.flatMap(e => [[noteId('시대', e.name), e.name],
-    ...(e.lanes || e.simple).flatMap(([c, ks]) => [[noteId(c, ''), e.name], ...ks.map(k => [noteId(c, Array.isArray(k) ? k[0] : k), e.name])])]);
+    ...(e.lanes || e.simple).flatMap(([c, ks]) => [[noteId(c, ''), e.name], ...ks.map(k => [noteId(Array.isArray(k) ? k[3] : c, Array.isArray(k) ? k[0] : k), e.name])])]);
   const nextNote = (id, eraName) => {
     const i = NOTE_ORDER.findIndex(([n, e]) => n === id && e === eraName);
     return NOTE_ORDER.slice(i + 1).find(([n]) => SUM[n]);
@@ -958,11 +960,11 @@
       for (let y = Math.ceil(era.from / era.tick) * era.tick; y <= era.to; y += era.tick) ticks.push(y);
       const lanes = era.lanes.map(([c, ks]) => {
         let floor = -Infinity;
-        const blocks = ks.map(([k, a, b]) => {
+        const blocks = ks.map(([k, a, b, src]) => {
           const y = Math.max(top(a), floor), h = Math.max(top(b) - top(a), MIN);
           floor = y + h + 2;
-          const id = noteId(c, k);
-          return `<button class="tl-b${cls(id)}" data-id="${esc(id)}" aria-current="${id === cur}" style="top:${y}px;height:${h}px" title="${esc(k)} ${yearLabel(a)}–${yearLabel(Math.floor(b))}"><b>${esc(k)}</b><small>${yearLabel(a)}</small></button>`;
+          const id = noteId(src, k), other = src !== c;
+          return `<button class="tl-b${cls(id)}${other ? ' tl-x' : ''}" data-id="${esc(id)}" aria-current="${id === cur}" style="top:${y}px;height:${h}px" title="${other ? esc(src) + ' ' : ''}${esc(k)} ${yearLabel(a)}–${yearLabel(Math.floor(b))}"><b>${esc(k)}</b><small>${yearLabel(a)}${other ? ' · ' + esc(src) : ''}</small></button>`;
         }).join('');
         const allId = noteId(c, '');
         const grid = ticks.map(y => `<i class="tl-grid" style="top:${top(y)}px"></i>`).join('');

@@ -332,7 +332,9 @@ button.tl-lh:hover small{color:var(--fg)}
 .tl-lane .tl-track::before{content:"";position:absolute;left:1px;top:0;bottom:0;width:1px;background:var(--line)}
 .tl-b{position:absolute;left:0;right:0;display:flex;flex-direction:column;justify-content:flex-start;padding:0 0 0 10px;background:none;border:0;border-left:3px solid color-mix(in srgb,var(--muted) 45%,transparent);border-radius:0;text-align:left;overflow:hidden;line-height:1.25;color:var(--fg)}
 .tl-b b{font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tl-b small{font-size:10px;color:var(--muted)}
+.tl-b small{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 이웃 시대에서 이어 붙인 왕(삼국 탭의 무열왕 등): 점선 */
+.tl-b.tl-x{border-left-style:dashed}
 .tl-b:hover{border-left-color:var(--muted);z-index:1}
 .tl-b.has{border-left-color:var(--fg)}
 .tl-b.has b{font-weight:700}
