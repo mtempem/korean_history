@@ -720,9 +720,11 @@
         toks.push({ idx, keys: idx.map(k => chars[k].c).join(''), alt: [' '], auto: true });
         i = j;
       }
+      // 줄 맨 앞 · 는 미리 찍어 둔다(치지 않음)
+      const pre = toks[0]?.auto && chars[toks[0].idx[0]].c === '·' ? toks.shift().idx : [];
       // [흐름] 같은 소제목 줄은 미리 채워 두고 건너뛴다
       const fixed = ri > 0 && /^\[[^\]]*\]$/.test(chars.map(c => c.c).join(''));
-      return { chars, toks, fixed, len: toks.reduce((n, t) => n + t.keys.length, 0) };
+      return { chars, toks, pre, fixed, len: toks.reduce((n, t) => n + t.keys.length, 0) };
     });
   }
   // 친 글자열을 토큰과 맞춰 본다: ok / bad / cmp(조합 중·덜 침) / todo
@@ -739,11 +741,11 @@
     });
     return { marks, ok, bad };
   }
-  function setupTyping(root, head, paper, key, title, html) {
+  function setupTyping(root, head, paper, key, title, html, onEnd, focusNow) {
     const L = typeLines(title, html);
     // 노트 내용이 바뀌면 쳐 둔 기록은 버린다
     const sig = [...L.map(l => l.chars.map(c => c.c).join('')).join('\n')].reduce((h, c) => (h * 31 + c.codePointAt(0)) | 0, 7);
-    let saved = store.get('type3:' + key, null);
+    let saved = store.get('type4:' + key, null);
     if (saved?.sig !== sig) saved = null;
     const full = l => l.toks.map(t => t.keys).join('');
     const typed = L.map((l, i) => l.fixed ? full(l) : saved?.typed?.[i] || '');
@@ -762,6 +764,7 @@
       const l = L[i], cur = i === at, t = typed[i];
       const { marks } = typeMarks(l, t, cur && composing);
       const cls = new Array(l.chars.length).fill('tp-todo');
+      l.pre.forEach(k => { cls[k] = 'tp-ok'; });
       let caret = -1;
       l.toks.forEach((tk, n) => { tk.idx.forEach(k => { cls[k] = 'tp-' + marks[n]; }); if (caret < 0 && marks[n] === 'todo') caret = tk.idx[0]; });
       if (cur && caret >= 0) cls[caret] += ' tp-at';
@@ -775,7 +778,7 @@
       bar.querySelector('.tp-stat').textContent = `${lines} / ${real.length}줄${all ? ` · 정확도 ${Math.round(ok / all * 100)}%` : ''}${lines === real.length ? ' · 완료!' : ''}`;
     };
     let st;
-    const persist = () => { clearTimeout(st); st = setTimeout(() => store.set('type3:' + key, { sig, at, typed }), 300); };
+    const persist = () => { clearTimeout(st); st = setTimeout(() => store.set('type4:' + key, { sig, at, typed }), 300); };
     const mount = () => {
       inp.classList.toggle('tp-input-head', at === 0);
       (at === 0 ? head.closest('.nb-headrow') : els[at]).after(inp);
@@ -799,18 +802,30 @@
       }
       if (t !== inp.value) { inp.value = t; inp.setSelectionRange(t.length, t.length); }
     };
-    const next = () => { const n = step(at + 1, 1); if (typed[at].length >= L[at].len && n != null) goLine(n); };
-    const sync = () => { if (!composing) fill(); typed[at] = inp.value; draw(at); stats(); persist(); };
+    const next = end => {
+      if (typed[at].length < L[at].len) return;
+      const n = step(at + 1, 1);
+      if (n != null) goLine(n); else if (end && onEnd) onEnd();
+    };
+    const sync = () => {
+      if (!composing) {
+        // 다 친 줄 끝에서 스페이스 → 다음 줄
+        const len = L[at].len, v = inp.value;
+        if (v.length > len && v.endsWith(' ') && step(at + 1, 1) != null) { typed[at] = v.slice(0, len); inp.value = typed[at]; return next(); }
+        fill();
+      }
+      typed[at] = inp.value; draw(at); stats(); persist();
+    };
     inp.addEventListener('input', e => { composing = !!e.isComposing; sync(); });
     inp.addEventListener('compositionend', () => {
       composing = false; sync();
-      if (enterAfter) { enterAfter = false; setTimeout(next, 0); }
+      if (enterAfter) { enterAfter = false; setTimeout(() => next(true), 0); }
     });
     inp.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         e.preventDefault();
         if (e.isComposing || e.keyCode === 229) { enterAfter = true; return; }
-        next();
+        next(true);
       } else if (e.key === 'Backspace' && !inp.value && !e.isComposing && step(at - 1, -1) != null) {
         e.preventDefault(); goLine(step(at - 1, -1));
       }
@@ -825,6 +840,7 @@
       if (ln && to !== at) return goLine(to);
       if (ln || e.target.closest('.nb-sum')) inp.focus({ preventScroll: true });
     });
+    if (focusNow) inp.focus({ preventScroll: true });
     bar.querySelector('.tp-reset').addEventListener('click', () => {
       L.forEach((l, i) => { typed[i] = l.fixed ? full(l) : ''; }); at = 0; inp.value = '';
       L.forEach((_, i) => draw(i)); stats(); mount(); persist(); inp.focus({ preventScroll: true });
@@ -890,6 +906,15 @@
     if (c === '시대') return k;
     return ERAS_TL.find(e => (e.lanes || e.simple).some(([lc, ks]) => lc === c && (k === ALL || ks.some(x => (Array.isArray(x) ? x[0] : x) === k))))?.name || '삼국';
   };
+
+  // 정리노트 넘김 순서: 시대마다 [시대 전체 → 나라 전체 → 왕들]
+  const NOTE_ORDER = ERAS_TL.flatMap(e => [[noteId('시대', e.name), e.name],
+    ...(e.lanes || e.simple).flatMap(([c, ks]) => [[noteId(c, ''), e.name], ...ks.map(k => [noteId(c, Array.isArray(k) ? k[0] : k), e.name])])]);
+  const nextNote = (id, eraName) => {
+    const i = NOTE_ORDER.findIndex(([n, e]) => n === id && e === eraName);
+    return NOTE_ORDER.slice(i + 1).find(([n]) => SUM[n]);
+  };
+  let typeFocus = false;
 
   function renderNotes(keepTl) {
     if (!index) buildIndex();
@@ -961,7 +986,7 @@
           ${NB_COLORS.map(([n, c]) => `<button class="nb-color" data-color="${c}" title="${n}" aria-label="글자색 ${n}"><i style="${c ? 'background:' + c : ''}"></i></button>`).join('')}
           <span class="nb-saved" id="nb-saved"></span>
         </div>
-        ${mode === 'sum' && SUM[cur] ? `<div class="tp-bar"><span class="tp-stat"></span><span class="tp-hint">회색 글씨를 따라 치세요 · 모르면 스페이스로 채우기 · Enter로 다음 줄</span><button class="tp-reset">처음부터</button></div>` : ''}
+        ${mode === 'sum' && SUM[cur] ? `<div class="tp-bar"><span class="tp-stat"></span><span class="tp-hint">모르면 스페이스로 채우기 · 줄 끝에서 스페이스로 다음 줄 · 마지막 줄에서 Enter로 다음 노트</span><button class="tp-reset">처음부터</button></div>` : ''}
         ${mode === 'sum' ? `<div class="nb-paper nb-sum"><div class="nb-editor nb-read${SUM[cur] ? ' nb-type' : ''}" id="nb-editor">${SUM[cur] ? '' : '<div class="nb-none">이 칸의 정리노트는 아직 없어요.</div>'}</div></div>` : ''}
         <div class="nb-paper"${mode === 'sum' ? ' hidden' : ''}><div class="nb-editor" id="nb-editor-mine" contenteditable="true" spellcheck="false" data-ph="강의를 들으며 ${esc(isEra ? kk + ' 시대' : kk === ALL ? cc : kk)}에 대해 필기하세요. 글자를 선택하고 색을 고르거나 Ctrl+B로 굵게 할 수 있어요.">${cleanHTML(items[cur]?.body || '')}</div></div>
       </section>
@@ -972,7 +997,16 @@
     // 메모지가 화면 아래 끝까지 오도록 최소 높이를 맞춘다(내용이 더 길면 그만큼 늘어남)
     const fit = () => { if (!shown.isConnected) return removeEventListener('resize', fit); shown.style.minHeight = Math.max(320, innerHeight - (shown.getBoundingClientRect().top + scrollY) - 24) + 'px'; };
     fit(); addEventListener('resize', fit);
-    if (mode === 'sum' && SUM[cur]) setupTyping(app.querySelector('#nb-main'), app.querySelector('.nb-head'), app.querySelector('.nb-sum'), cur, title, SUM[cur]);
+    if (mode === 'sum' && SUM[cur]) {
+      // 마지막 줄에서 Enter → 다음 정리노트로 넘어가 바로 이어 친다
+      const goNext = () => {
+        const nx = nextNote(cur, era.name); if (!nx) return;
+        store.set('notebookCur', nx[0]); store.set('notebookEra', nx[1]);
+        typeFocus = true; renderNotes(); scrollTo(0, 0);
+      };
+      setupTyping(app.querySelector('#nb-main'), app.querySelector('.nb-head'), app.querySelector('.nb-sum'), cur, title, SUM[cur], goNext, typeFocus);
+      typeFocus = false;
+    }
     try { document.execCommand('styleWithCSS', false, true); } catch {}
     let t;
     const persist = () => {
