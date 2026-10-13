@@ -681,6 +681,116 @@
   };
   const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   // 붙여넣기·불러온 내용에서 허용한 서식(굵게·색·줄바꿈·목록)만 남긴다
+  /* ---------- 정리노트 타자 연습: 회색 글씨를 제목부터 한 줄씩 따라 친다 ---------- */
+  // 내용(한글·숫자)만 친다. ·, ※, →, 괄호·쉼표 같은 기호와 한자·영어는 자동으로 채운다
+  const TYPABLE = /[\uAC00-\uD7A3\u3131-\u318E0-9 ]/;
+  function typeLines(title, html) {
+    const box = document.createElement('div'); box.innerHTML = cleanHTML(html);
+    const rows = [[...title].map(c => ({ c }))];
+    for (const row of box.children) {
+      const chars = [];
+      const walk = (n, st) => {
+        if (n.nodeType === 3) { for (const c of n.nodeValue.replace(/\s+/g, ' ')) chars.push({ c, ...st }); return; }
+        if (n.nodeType !== 1) return;
+        const s = { ...st };
+        if (/^(B|STRONG)$/.test(n.tagName)) s.b = 1;
+        if (n.style?.color) s.color = n.style.color;
+        n.childNodes.forEach(k => walk(k, s));
+      };
+      walk(row, {});
+      while (chars[0]?.c === ' ') chars.shift();
+      while (chars.at(-1)?.c === ' ') chars.pop();
+      if (chars.length) rows.push(chars);
+    }
+    return rows.map(chars => {
+      let want = ''; const pos = [];
+      chars.forEach((ch, i) => {
+        ch.auto = !TYPABLE.test(ch.c) || (ch.c === ' ' && (!want || want.endsWith(' ')));
+        if (!ch.auto) { ch.k = want.length; pos.push(i); want += ch.c; }
+      });
+      while (want.endsWith(' ')) { want = want.slice(0, -1); const ch = chars[pos.pop()]; ch.auto = true; delete ch.k; }
+      // 자동 기호는 앞에 있는 글자 수만큼 쳤을 때 채워진다
+      let n = 0; chars.forEach(ch => { if (ch.auto) ch.before = n; else n++; });
+      return { chars, want };
+    });
+  }
+  function setupTyping(root, head, paper, key, title, html) {
+    const L = typeLines(title, html);
+    const saved = store.get('type:' + key, null);
+    const typed = L.map((_, i) => (saved?.typed?.[i] || '').slice(0, L[i].want.length + 2));
+    let at = Math.min(saved?.at ?? 0, L.length - 1), composing = false, enterAfter = false;
+    const ta = document.createElement('textarea');
+    ta.className = 'tp-input'; ta.setAttribute('aria-label', '정리노트 따라 치기');
+    ta.autocomplete = 'off'; ta.spellcheck = false; ta.setAttribute('autocapitalize', 'off'); ta.setAttribute('autocorrect', 'off');
+    paper.append(ta);
+    const bar = root.querySelector('.tp-bar');
+    const els = [head, ...L.slice(1).map(() => { const d = document.createElement('div'); d.className = 'tp-line'; return d; })];
+    paper.querySelector('.nb-type').append(...els.slice(1));
+    els.forEach((el, i) => { el.dataset.line = i; });
+    const charHTML = (ch, cls) => `<span class="${cls}"${ch.b || ch.color ? ` style="${ch.b ? 'font-weight:700;' : ''}${ch.color ? 'color:' + ch.color : ''}"` : ''}>${esc(ch.c)}</span>`;
+    const draw = i => {
+      const { chars, want } = L[i], t = typed[i], cur = i === at, done = !cur && t.length >= want.length;
+      let out = '';
+      chars.forEach(ch => {
+        let cls;
+        if (ch.auto) cls = done || t.length > ch.before || (ch.before === want.length && t.length >= want.length && want) ? 'tp-ok' : 'tp-todo';
+        else if (ch.k < t.length) cls = cur && composing && ch.k === t.length - 1 ? 'tp-cmp' : t[ch.k] === ch.c ? 'tp-ok' : 'tp-bad';
+        else cls = 'tp-todo';
+        if (cur && !ch.auto && ch.k === t.length) cls += ' tp-at';
+        out += charHTML(ch, cls);
+      });
+      if (cur && t.length >= want.length) out += '<span class="tp-at tp-end"></span>';
+      els[i].innerHTML = out;
+      els[i].classList.toggle('tp-cur', cur);
+    };
+    const stats = () => {
+      let ok = 0, all = 0, lines = 0;
+      L.forEach((l, i) => { const t = typed[i]; for (let k = 0; k < Math.min(t.length, l.want.length); k++) { all++; if (t[k] === l.want[k]) ok++; } if (t.length >= l.want.length) lines++; });
+      bar.querySelector('.tp-stat').textContent = `${lines} / ${L.length}줄${all ? ` · 정확도 ${Math.round(ok / all * 100)}%` : ''}${lines === L.length ? ' · 완료!' : ''}`;
+    };
+    let st;
+    const persist = () => { clearTimeout(st); st = setTimeout(() => store.set('type:' + key, { at, typed }), 300); };
+    // 입력 칸을 지금 줄 위치로 옮겨 모바일에서 화면이 엉뚱하게 튀지 않게 한다
+    const place = () => { const r = els[at].getBoundingClientRect(), p = paper.getBoundingClientRect(); ta.style.top = Math.max(0, r.top - p.top) + 'px'; };
+    const goLine = i => {
+      const prev = at; at = Math.max(0, Math.min(L.length - 1, i));
+      ta.value = typed[at]; composing = false;
+      draw(prev); draw(at); place(); stats(); persist();
+    };
+    L.forEach((_, i) => draw(i)); stats(); place();
+    ta.addEventListener('input', e => {
+      typed[at] = ta.value.replace(/\n/g, '');
+      composing = !!e.isComposing;
+      draw(at); stats(); persist();
+    });
+    ta.addEventListener('compositionend', () => {
+      composing = false; typed[at] = ta.value.replace(/\n/g, ''); draw(at); stats(); persist();
+      if (enterAfter) { enterAfter = false; setTimeout(() => { if (typed[at].length >= L[at].want.length && at < L.length - 1) goLine(at + 1); }, 0); }
+    });
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (e.isComposing || e.keyCode === 229) { enterAfter = true; return; }
+        if (typed[at].length >= L[at].want.length && at < L.length - 1) goLine(at + 1);
+      } else if (e.key === 'Backspace' && !ta.value && at > 0 && !e.isComposing) {
+        e.preventDefault(); goLine(at - 1);
+      }
+    });
+    ta.addEventListener('focus', () => root.classList.add('tp-on'));
+    ta.addEventListener('blur', () => root.classList.remove('tp-on'));
+    // 아무 줄이나 누르면 그 줄부터 친다
+    root.addEventListener('click', e => {
+      const ln = e.target.closest('[data-line]');
+      if (ln && +ln.dataset.line !== at) goLine(+ln.dataset.line);
+      if (ln || e.target.closest('.nb-sum')) ta.focus({ preventScroll: true });
+    });
+    bar.querySelector('.tp-reset').addEventListener('click', () => {
+      typed.fill(''); const prev = at; at = 0; ta.value = '';
+      L.forEach((_, i) => draw(i)); draw(prev); stats(); place(); persist(); ta.focus({ preventScroll: true });
+    });
+    ta.value = typed[at];
+  }
+
   function cleanHTML(html) {
     const doc = new DOMParser().parseFromString('<div>' + (html || '') + '</div>', 'text/html');
     const walk = node => {
@@ -811,7 +921,8 @@
           ${NB_COLORS.map(([n, c]) => `<button class="nb-color" data-color="${c}" title="${n}" aria-label="글자색 ${n}"><i style="${c ? 'background:' + c : ''}"></i></button>`).join('')}
           <span class="nb-saved" id="nb-saved"></span>
         </div>
-        ${mode === 'sum' ? `<div class="nb-paper nb-sum"><div class="nb-editor nb-read" id="nb-editor">${SUM[cur] ? cleanHTML(SUM[cur]) : '<div class="nb-none">이 칸의 정리노트는 아직 없어요.</div>'}</div></div>` : ''}
+        ${mode === 'sum' && SUM[cur] ? `<div class="tp-bar"><span class="tp-stat"></span><span class="tp-hint">한글·숫자만 따라 치세요 · Enter로 다음 줄</span><button class="tp-reset">처음부터</button></div>` : ''}
+        ${mode === 'sum' ? `<div class="nb-paper nb-sum"><div class="nb-editor nb-read${SUM[cur] ? ' nb-type' : ''}" id="nb-editor">${SUM[cur] ? '' : '<div class="nb-none">이 칸의 정리노트는 아직 없어요.</div>'}</div></div>` : ''}
         <div class="nb-paper"${mode === 'sum' ? ' hidden' : ''}><div class="nb-editor" id="nb-editor-mine" contenteditable="true" spellcheck="false" data-ph="강의를 들으며 ${esc(isEra ? kk + ' 시대' : kk === ALL ? cc : kk)}에 대해 필기하세요. 글자를 선택하고 색을 고르거나 Ctrl+B로 굵게 할 수 있어요.">${cleanHTML(items[cur]?.body || '')}</div></div>
       </section>
     </div>`;
@@ -821,6 +932,7 @@
     // 메모지가 화면 아래 끝까지 오도록 최소 높이를 맞춘다(내용이 더 길면 그만큼 늘어남)
     const fit = () => { if (!shown.isConnected) return removeEventListener('resize', fit); shown.style.minHeight = Math.max(320, innerHeight - (shown.getBoundingClientRect().top + scrollY) - 24) + 'px'; };
     fit(); addEventListener('resize', fit);
+    if (mode === 'sum' && SUM[cur]) setupTyping(app.querySelector('#nb-main'), app.querySelector('.nb-head'), app.querySelector('.nb-sum'), cur, title, SUM[cur]);
     try { document.execCommand('styleWithCSS', false, true); } catch {}
     let t;
     const persist = () => {

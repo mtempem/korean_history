@@ -292,6 +292,24 @@ main{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
 /* 정리노트(읽기 전용) */
 .nb-read{cursor:default}
 .nb-none{color:var(--memo-ink);opacity:.5}
+/* 정리노트 타자 연습: 아직 안 친 글자는 연한 회색, 친 글자는 원래 색, 틀린 글자는 빨간 밑줄 */
+.nb-type{cursor:text}
+.tp-line{min-height:32px}
+.tp-todo{color:var(--memo-ink)!important;opacity:.28}
+.tp-bad{color:#d6332a!important;text-decoration:underline 2px;text-underline-offset:4px}
+.tp-cmp{text-decoration:underline 1px;text-underline-offset:4px}
+.tp-at{box-shadow:-2px 0 0 var(--accent)}
+.tp-end{display:inline-block;width:1px;height:1em;vertical-align:-2px}
+.tp-on .tp-at{animation:tp-blink 1s steps(1) infinite}
+@keyframes tp-blink{50%{box-shadow:none}}
+#nb-main:not(.tp-on) .tp-at{box-shadow:-2px 0 0 color-mix(in srgb,var(--accent) 35%,transparent)}
+.nb-head[data-line]{cursor:text}
+.tp-input{position:absolute;left:0;width:100%;height:32px;padding:0;border:0;opacity:0;resize:none;font-size:16px;z-index:-1;pointer-events:none}
+.tp-bar{display:flex;align-items:center;gap:12px;padding:8px 0;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--line)}
+.tp-stat{color:var(--fg);font-weight:600}
+.tp-hint{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tp-reset{flex:none;font-size:12.5px;color:var(--muted)}
+.tp-reset:hover{color:var(--fg)}
 /* 시대 탭: 글자만, 고른 시대에 밑줄 */
 .tl-eras{flex:none;display:flex;flex-wrap:wrap;gap:2px 14px;border:0;background:none;padding:0;border-radius:0;overflow:visible}
 .tl-eras button{padding:4px 0;font-size:13px;color:var(--muted);background:none;border-bottom:2px solid transparent}
