@@ -682,7 +682,7 @@
   const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   // 붙여넣기·불러온 내용에서 허용한 서식(굵게·색·줄바꿈·목록)만 남긴다
   /* ---------- 정리노트 타자 연습: 회색 글씨를 제목부터 한 줄씩 따라 친다 ---------- */
-  // 한글·숫자·키보드 기호는 그대로 친다(→는 ->). 한자·영어·※·· 같은 글자는 스페이스 한 번으로 채운다
+  // 한글·숫자·키보드 기호는 그대로 친다. 한자·영어·※·→ 같은 글자는 스페이스(→는 ->도)를 누르면 제 글자로 바뀐다
   const TYPABLE = /[가-힣ㄱ-ㆎ0-9 !-\/:-@\[-`{-~→←↔]/;
   const KEYS = { '→': '->', '←': '<-', '↔': '<->' };
   function typeLines(title, html) {
@@ -706,14 +706,15 @@
     return rows.map(chars => {
       const toks = [], ok = c => TYPABLE.test(c);
       for (let i = 0; i < chars.length; i++) {
-        if (ok(chars[i].c)) { toks.push({ idx: [i], keys: KEYS[chars[i].c] || chars[i].c }); continue; }
+        const c = chars[i].c;
+        if (ok(c)) { toks.push(KEYS[c] ? { idx: [i], keys: c, alt: [KEYS[c], ' '] } : { idx: [i], keys: c }); continue; }
         // 칠 수 없는 글자 묶음(사이 띄어쓰기 포함)과 앞뒤 띄어쓰기 한 칸을 스페이스 한 번으로
         let j = i;
         while (j + 1 < chars.length && (!ok(chars[j + 1].c) || (chars[j + 1].c === ' ' && chars[j + 2] && !ok(chars[j + 2].c)))) j++;
         const idx = []; for (let k = i; k <= j; k++) idx.push(k);
         if (toks.at(-1)?.keys === ' ' && !toks.at(-1).auto) idx.unshift(...toks.pop().idx);
         if (chars[j + 1]?.c === ' ') idx.push(++j);
-        toks.push({ idx, keys: ' ', auto: true });
+        toks.push({ idx, keys: idx.map(k => chars[k].c).join(''), alt: [' '], auto: true });
         i = j;
       }
       return { chars, toks, len: toks.reduce((n, t) => n + t.keys.length, 0) };
@@ -724,6 +725,8 @@
     let p = 0, ok = 0, bad = 0;
     const marks = L.toks.map((tk, n) => {
       if (p >= t.length) return 'todo';
+      // ->를 치는 중('-'까지만 침)이면 아직 틀린 게 아니다
+      if (tk.alt && tk.alt.some(x => x.length > t.length - p && x.startsWith(t.slice(p)))) { p = t.length; return 'cmp'; }
       const seg = t.slice(p, p + tk.keys.length); p += tk.keys.length;
       if (seg.length < tk.keys.length || (composing && p >= t.length)) return 'cmp';
       if (seg === tk.keys) { ok++; return 'ok'; }
@@ -733,7 +736,7 @@
   }
   function setupTyping(root, head, paper, key, title, html) {
     const L = typeLines(title, html);
-    const saved = store.get('type:' + key, null);
+    const saved = store.get('type3:' + key, null);
     const typed = L.map((l, i) => (saved?.v === 2 && saved.typed?.[i]) || '');
     let at = Math.min(saved?.v === 2 ? saved.at : 0, L.length - 1), composing = false, enterAfter = false;
     // 지금 줄 바로 아래에 실제 입력 칸을 둔다(친 글자가 그대로 보이게)
@@ -760,7 +763,7 @@
       bar.querySelector('.tp-stat').textContent = `${lines} / ${L.length}줄${all ? ` · 정확도 ${Math.round(ok / all * 100)}%` : ''}${lines === L.length ? ' · 완료!' : ''}`;
     };
     let st;
-    const persist = () => { clearTimeout(st); st = setTimeout(() => store.set('type:' + key, { v: 2, at, typed }), 300); };
+    const persist = () => { clearTimeout(st); st = setTimeout(() => store.set('type3:' + key, { v: 2, at, typed }), 300); };
     const mount = () => {
       inp.classList.toggle('tp-input-head', at === 0);
       (at === 0 ? head.closest('.nb-headrow') : els[at]).after(inp);
@@ -774,7 +777,17 @@
       if (r.bottom > innerHeight - 40 || r.top < 80) inp.scrollIntoView({ block: 'center', behavior: 'smooth' });
     };
     L.forEach((_, i) => draw(i)); stats(); mount(); inp.value = typed[at];
-    const sync = () => { typed[at] = inp.value; draw(at); stats(); persist(); };
+    // 스페이스(또는 ->)를 친 자리가 자동 글자 자리면 입력 칸에도 제 글자로 바꿔 넣는다
+    const fill = () => {
+      let t = inp.value, p = 0;
+      for (const tk of L[at].toks) {
+        if (p >= t.length) break;
+        if (tk.alt && !t.startsWith(tk.keys, p)) { const a = tk.alt.find(a => t.startsWith(a, p)); if (a) t = t.slice(0, p) + tk.keys + t.slice(p + a.length); }
+        p += tk.keys.length;
+      }
+      if (t !== inp.value) { inp.value = t; inp.setSelectionRange(t.length, t.length); }
+    };
+    const sync = () => { if (!composing) fill(); typed[at] = inp.value; draw(at); stats(); persist(); };
     inp.addEventListener('input', e => { composing = !!e.isComposing; sync(); });
     inp.addEventListener('compositionend', () => {
       composing = false; sync();
@@ -934,7 +947,7 @@
           ${NB_COLORS.map(([n, c]) => `<button class="nb-color" data-color="${c}" title="${n}" aria-label="글자색 ${n}"><i style="${c ? 'background:' + c : ''}"></i></button>`).join('')}
           <span class="nb-saved" id="nb-saved"></span>
         </div>
-        ${mode === 'sum' && SUM[cur] ? `<div class="tp-bar"><span class="tp-stat"></span><span class="tp-hint">회색 글씨를 따라 치세요 · 한자·영어·※는 스페이스 · → 는 -> · Enter로 다음 줄</span><button class="tp-reset">처음부터</button></div>` : ''}
+        ${mode === 'sum' && SUM[cur] ? `<div class="tp-bar"><span class="tp-stat"></span><span class="tp-hint">회색 글씨를 따라 치세요 · 한자·영어·※·→는 스페이스 · Enter로 다음 줄</span><button class="tp-reset">처음부터</button></div>` : ''}
         ${mode === 'sum' ? `<div class="nb-paper nb-sum"><div class="nb-editor nb-read${SUM[cur] ? ' nb-type' : ''}" id="nb-editor">${SUM[cur] ? '' : '<div class="nb-none">이 칸의 정리노트는 아직 없어요.</div>'}</div></div>` : ''}
         <div class="nb-paper"${mode === 'sum' ? ' hidden' : ''}><div class="nb-editor" id="nb-editor-mine" contenteditable="true" spellcheck="false" data-ph="강의를 들으며 ${esc(isEra ? kk + ' 시대' : kk === ALL ? cc : kk)}에 대해 필기하세요. 글자를 선택하고 색을 고르거나 Ctrl+B로 굵게 할 수 있어요.">${cleanHTML(items[cur]?.body || '')}</div></div>
       </section>
