@@ -720,8 +720,10 @@
         toks.push({ idx, keys: idx.map(k => chars[k].c).join(''), alt: [' '], auto: true });
         i = j;
       }
-      // 줄 맨 앞 · 는 미리 찍어 둔다(치지 않음)
-      const pre = toks[0]?.auto && chars[toks[0].idx[0]].c === '·' ? toks.shift().idx : [];
+      // 줄 맨 앞 기호(·, ※ 등 키보드로 칠 수 없는 글자)는 미리 찍어 둔다(치지 않음)
+      const pre = toks[0]?.auto ? toks.shift().idx : [];
+      // "· → …" 처럼 이어지는 화살표와 띄어쓰기도 함께
+      while (pre.length && toks[0] && (KEYS[toks[0].keys] || toks[0].keys === ' ')) pre.push(...toks.shift().idx);
       // [흐름] 같은 소제목 줄은 미리 채워 두고 건너뛴다
       const fixed = ri > 0 && /^\[[^\]]*\]$/.test(chars.map(c => c.c).join(''));
       return { chars, toks, pre, fixed, len: toks.reduce((n, t) => n + t.keys.length, 0) };
@@ -795,7 +797,7 @@
     // 입력 칸에도 줄 앞 · 를 미리 넣어 둔다. typed에는 그 뒤에 친 것만 담는다
     const pfx = () => L[at].pre.map(k => L[at].chars[k].c).join('');
     const show = () => { inp.value = pfx() + typed[at]; inp.setSelectionRange(inp.value.length, inp.value.length); };
-    const typedPart = () => { const p = pfx(), v = inp.value; return v.startsWith(p) ? v.slice(p.length) : v.replace(/^·\s?/, ''); };
+    const typedPart = () => { const p = pfx(), v = inp.value; return v.startsWith(p) ? v.slice(p.length) : v.replace(/^[^\uAC00-\uD7A3\u3131-\u318E0-9A-Za-z(\[]+\s?/, ''); };
     // 스페이스(또는 ->)를 친 자리면 그 자리의 제 글자로 바꿔 넣는다
     const fill = t => {
       let p = 0;
