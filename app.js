@@ -906,18 +906,6 @@
     일제강점기: [['1910년대', 1910, 1919], ['1920년대', 1919, 1931], ['1930년대 이후', 1931, 1945]],
     현대: [['미군정', 1945, 1948], ['이승만 정부', 1948, 1960], ['허정 과도 정부', 1960, 1960.4], ['장면 내각', 1960.4, 1961], ['박정희 정부', 1961, 1979], ['최규하 정부', 1979, 1980], ['전두환 정부', 1980, 1988], ['노태우 정부', 1988, 1993], ['김영삼 정부', 1993, 1998], ['김대중 정부', 1998, 2003], ['노무현 정부', 2003, 2008], ['이명박 정부', 2008, 2013], ['박근혜 정부', 2013, 2017], ['문재인 정부', 2017, 2022], ['윤석열 정부', 2022, 2025]],
   };
-  // 정리노트가 없는 왕: 연표에 작은 글씨로 순서만 보여 준다(클릭 X, 다른 칸을 밀지 않음)
-  const MINOR = {
-    고구려: [['유리명왕', -19, 18], ['대무신왕', 18, 44], ['민중왕', 44, 48], ['모본왕', 48, 53], ['차대왕', 146, 165], ['신대왕', 165, 179], ['산상왕', 197, 227], ['중천왕', 248, 270], ['서천왕', 270, 292], ['봉상왕', 292, 300], ['고국양왕', 384, 391], ['안장왕', 519, 531], ['안원왕', 531, 545], ['양원왕', 545, 559], ['평원왕', 559, 590]],
-    백제: [['다루왕', 28, 77], ['기루왕', 77, 128], ['개루왕', 128, 166], ['초고왕', 166, 214], ['구수왕', 214, 234], ['책계왕', 286, 298], ['분서왕', 298, 304], ['비류왕', 304, 344], ['계왕', 344, 346], ['근구수왕', 375, 384], ['진사왕', 385, 392], ['아신왕', 392, 405], ['전지왕', 405, 420], ['구이신왕', 420, 427], ['삼근왕', 477, 479], ['위덕왕', 554, 598], ['혜왕', 598, 599], ['법왕', 599, 600]],
-    신라: [['혁거세', -57, 4], ['남해', 4, 24], ['유리', 24, 57], ['탈해', 57, 80], ['파사', 80, 112], ['지마', 112, 134], ['일성', 134, 154], ['아달라', 154, 184], ['벌휴', 184, 196], ['내해', 196, 230], ['조분', 230, 247], ['첨해', 247, 261], ['미추', 262, 284], ['유례', 284, 298], ['기림', 298, 310], ['흘해', 310, 356], ['실성왕', 402, 417], ['자비왕', 458, 479], ['진지왕', 576, 579]],
-    통일신라: [['효소왕', 692, 702], ['효성왕', 737, 742], ['선덕왕', 780, 785], ['소성왕', 799, 800], ['애장왕', 800, 809], ['희강왕', 836, 838], ['민애왕', 838, 839], ['신무왕', 839, 839.5], ['문성왕', 839, 857], ['헌안왕', 857, 861], ['경문왕', 861, 875], ['헌강왕', 875, 886], ['정강왕', 886, 887], ['효공왕', 897, 912], ['신덕왕', 912, 917], ['경명왕', 917, 924], ['경애왕', 924, 927]],
-    발해: [['성왕', 793, 794], ['강왕', 794, 809], ['정왕', 809, 812], ['희왕', 812, 817], ['간왕', 817, 818], ['대이진', 830, 857], ['대건황', 857, 871], ['대현석', 871, 894], ['대위해', 894, 906]],
-    후삼국: [['신검', 935, 936]],
-    고려: [['혜종', 943, 945], ['정종', 945, 949], ['덕종', 1031, 1034], ['정종', 1034, 1046], ['순종', 1083, 1083.5], ['선종', 1083, 1094], ['헌종', 1094, 1095], ['희종', 1204, 1211], ['강종', 1211, 1213], ['충숙왕', 1313, 1330], ['충혜왕', 1330, 1332], ['충숙왕', 1332, 1339], ['충혜왕', 1339, 1344], ['충목왕', 1344, 1348], ['충정왕', 1348, 1351]],
-    조선: [['예종', 1468, 1469], ['인종', 1544, 1545]],
-    현대: [['이재명 정부', 2025.4, 2026]],
-  };
   // 시대 탭: 그 기간에 걸친 나라를 모두 라인으로 둔다(라인에는 기간 안의 왕만)
   const ERAS_TL = [
     { name: '고대 초기', simple: [['선사', ['구석기', '신석기', '청동기', '철기']], ['고조선', ['단군왕검', '위만', '우거왕']], ['부여', []], ['옥저', []], ['동예', []], ['삼한', []]] },
@@ -926,10 +914,9 @@
     { name: '남북국', from: 650, to: 940, tick: 20, countries: ['통일신라', '발해', '후삼국'], join: { 통일신라: ['신라', '통일신라'] } },
     { name: '고려', from: 890, to: 1400, tick: 50, countries: ['후삼국', '고려'] },
     { name: '조선', from: 1390, to: 1870, tick: 50, countries: ['조선'] },
-    { name: '근현대', from: 1860, to: 2026, tick: 10, countries: ['개항기', '일제강점기', '현대'] },
+    { name: '근현대', from: 1860, to: 2025, tick: 10, countries: ['개항기', '일제강점기', '현대'] },
   ].map(e => e.countries ? { ...e, lanes: e.countries.map(c => [c, (e.join?.[c] || [c])
-    .flatMap(src => KINGS[src].map(([k, a, b]) => [k, a, b, src])).filter(([, a, b]) => b >= e.from && a <= e.to),
-    (e.join?.[c] || [c]).flatMap(src => MINOR[src] || []).filter(([, a, b]) => b >= e.from && a <= e.to)]) } : e);
+    .flatMap(src => KINGS[src].map(([k, a, b]) => [k, a, b, src])).filter(([, a, b]) => b >= e.from && a <= e.to)]) } : e);
   const ALL = '전체';
   const noteId = (c, k) => c + '|' + (k || ALL);
   const yearLabel = y => y < 0 ? '기원전 ' + -y : y + '';
@@ -977,26 +964,20 @@
       const H = top(era.to) + 20;
       const ticks = [];
       for (let y = Math.ceil(era.from / era.tick) * era.tick; y <= era.to; y += era.tick) ticks.push(y);
-      let laneEnd = 0;
-      const lanes = era.lanes.map(([c, ks, minor]) => {
-        // 정리노트 있는 왕(큰 칸)과 없는 왕(작은 이름표)을 재위 순서대로 한 줄에 쌓는다.
-        // 겹치면 아래로 밀되 칸의 끝은 실제 퇴위 연도에 맞춰, 긴 재위를 지나면 다시 제 높이로 돌아온다(연표가 길어지지 않음)
-        let floor = -Infinity, blocks = '', small = '';
-        const all = [...ks.map(x => [x, true]), ...minor.map(x => [x, false])].sort((p, q) => p[0][1] - q[0][1] || q[1] - p[1]);
-        for (const [[k, a, b, src], big] of all) {
-          const y = Math.max(top(a), floor), h = Math.max(top(b) - y, big ? MIN : 15);
-          floor = y + h + (big ? 2 : 1);
-          if (!big) { small += `<span class="tl-m" style="top:${y}px;height:${h}px" title="${esc(k)} ${yearLabel(Math.floor(a))}–${yearLabel(Math.floor(b))}">${esc(k)}</span>`; continue; }
+      const lanes = era.lanes.map(([c, ks]) => {
+        let floor = -Infinity;
+        const blocks = ks.map(([k, a, b, src]) => {
+          const y = Math.max(top(a), floor), h = Math.max(top(b) - top(a), MIN);
+          floor = y + h + 2;
           const id = noteId(src, k), other = src !== c;
-          blocks += `<button class="tl-b${cls(id)}${other ? ' tl-x' : ''}" data-id="${esc(id)}" aria-current="${id === cur}" style="top:${y}px;height:${h}px" title="${other ? esc(src) + ' ' : ''}${esc(k)} ${yearLabel(a)}–${yearLabel(Math.floor(b))}"><b>${esc(k)}</b><small>${yearLabel(a)}</small></button>`;
-        }
-        laneEnd = Math.max(laneEnd, floor);
+          return `<button class="tl-b${cls(id)}${other ? ' tl-x' : ''}" data-id="${esc(id)}" aria-current="${id === cur}" style="top:${y}px;height:${h}px" title="${other ? esc(src) + ' ' : ''}${esc(k)} ${yearLabel(a)}–${yearLabel(Math.floor(b))}"><b>${esc(k)}</b><small>${yearLabel(a)}${other ? ' · ' + esc(src) : ''}</small></button>`;
+        }).join('');
         const allId = noteId(c, '');
         const grid = ticks.map(y => `<i class="tl-grid" style="top:${top(y)}px"></i>`).join('');
-        return `<div class="tl-lane"><button class="tl-lh${cls(allId)}" data-id="${esc(allId)}" aria-current="${allId === cur}">${c}<small>전체</small></button><div class="tl-track" style="height:__H__px">${grid}${small}${blocks}</div></div>`;
-      }).join('').replaceAll('__H__', Math.max(H, laneEnd + 12));
+        return `<div class="tl-lane"><button class="tl-lh${cls(allId)}" data-id="${esc(allId)}" aria-current="${allId === cur}">${c}<small>전체</small></button><div class="tl-track" style="height:${H}px">${grid}${blocks}</div></div>`;
+      }).join('');
       chart = `<div class="tl-chart" style="--lanes:${era.lanes.length}">
-        <div class="tl-axis"><div class="tl-lh tl-lh-axis">연도</div><div class="tl-track" style="height:${Math.max(H, laneEnd + 12)}px">${ticks.map(y => `<span style="top:${top(y)}px">${yearLabel(y)}</span>`).join('')}</div></div>
+        <div class="tl-axis"><div class="tl-lh tl-lh-axis">연도</div><div class="tl-track" style="height:${H}px">${ticks.map(y => `<span style="top:${top(y)}px">${yearLabel(y)}</span>`).join('')}</div></div>
         ${lanes}
       </div>`;
     }
