@@ -981,8 +981,8 @@
         // 작은 이름표끼리만 겹치지 않게 비킨다(큰 칸은 밀지 않음)
         let mf = -Infinity;
         const small = minor.slice().sort((x, y) => x[1] - y[1]).map(([k, a, b]) => {
-          const y = Math.max(top(a), mf); mf = y + 14;
-          return `<span class="tl-m" style="top:${y}px" title="${esc(k)} ${yearLabel(Math.floor(a))}–${yearLabel(Math.floor(b))}">${esc(k)}</span>`;
+          const y = Math.max(top(a), mf), h = Math.max(top(b) - top(a), 13); mf = y + h + 1;
+          return `<span class="tl-m" style="top:${y}px;height:${h}px" title="${esc(k)} ${yearLabel(Math.floor(a))}–${yearLabel(Math.floor(b))}">${esc(k)}</span>`;
         }).join('');
         let floor = -Infinity;
         const blocks = ks.map(([k, a, b, src]) => {
