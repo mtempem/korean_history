@@ -335,8 +335,9 @@ button.tl-lh:hover small{color:var(--fg)}
 .tl-b small{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* 이웃 시대에서 이어 붙인 왕(삼국 탭의 무열왕 등): 점선 */
 .tl-b.tl-x{border-left-style:dashed}
-/* 정리노트 없는 왕: 큰 칸처럼 왼쪽 선(가늘게) + 작은 회색 글씨(클릭 X). 큰 칸이 위에 오도록 큰 칸에 배경 */
-.tl-m{position:absolute;left:0;right:0;padding-left:10px;border-left:1px solid color-mix(in srgb,var(--muted) 40%,transparent);font-size:10px;line-height:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}
+/* 정리노트 없는 왕: 칸 오른쪽 작은 회색 글씨(클릭 X) + 실제 즉위 연도 자리에서 이어지는 점선 */
+.tl-m{position:absolute;right:2px;z-index:2;padding:0 2px;font-size:10px;line-height:13px;color:var(--muted);background:var(--bg);white-space:nowrap;cursor:default}
+.tl-ml{position:absolute;left:0;border-top:1px dotted color-mix(in srgb,var(--muted) 70%,transparent);border-right:1px dotted color-mix(in srgb,var(--muted) 70%,transparent)}
 .tl-b{background:var(--bg)!important}
 .tl-b:hover{border-left-color:var(--muted);z-index:1}
 .tl-b.has{border-left-color:var(--fg)}

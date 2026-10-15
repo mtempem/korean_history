@@ -977,26 +977,31 @@
       const H = top(era.to) + 20;
       const ticks = [];
       for (let y = Math.ceil(era.from / era.tick) * era.tick; y <= era.to; y += era.tick) ticks.push(y);
+      let laneEnd = 0;
       const lanes = era.lanes.map(([c, ks, minor]) => {
-        // 작은 이름표끼리만 겹치지 않게 비킨다(큰 칸은 밀지 않음)
-        let mf = -Infinity;
-        const small = minor.slice().sort((x, y) => x[1] - y[1]).map(([k, a, b]) => {
-          const y = Math.max(top(a), mf), h = Math.max(top(b) - top(a), 13); mf = y + h + 1;
-          return `<span class="tl-m" style="top:${y}px;height:${h}px" title="${esc(k)} ${yearLabel(Math.floor(a))}–${yearLabel(Math.floor(b))}">${esc(k)}</span>`;
-        }).join('');
+        // 큰 칸(정리노트 있는 왕)은 지금처럼 연도 위치에 쌓는다
         let floor = -Infinity;
         const blocks = ks.map(([k, a, b, src]) => {
           const y = Math.max(top(a), floor), h = Math.max(top(b) - top(a), MIN);
           floor = y + h + 2;
           const id = noteId(src, k), other = src !== c;
-          return `<button class="tl-b${cls(id)}${other ? ' tl-x' : ''}" data-id="${esc(id)}" aria-current="${id === cur}" style="top:${y}px;height:${h}px" title="${other ? esc(src) + ' ' : ''}${esc(k)} ${yearLabel(a)}–${yearLabel(Math.floor(b))}"><b>${esc(k)}</b><small>${yearLabel(a)}${other ? ' · ' + esc(src) : ''}</small></button>`;
+          return `<button class="tl-b${cls(id)}${other ? ' tl-x' : ''}" data-id="${esc(id)}" aria-current="${id === cur}" style="top:${y}px;height:${h}px" title="${other ? esc(src) + ' ' : ''}${esc(k)} ${yearLabel(a)}–${yearLabel(Math.floor(b))}"><b>${esc(k)}</b><small>${yearLabel(a)}</small></button>`;
         }).join('');
+        // 작은 이름표(정리노트 없는 왕): 칸 오른쪽에 순서대로 두고, 실제 즉위 연도 자리에서 점선으로 이어 준다
+        let mf = -Infinity, small = '';
+        for (const [k, a, b] of minor.slice().sort((p, q) => p[1] - q[1])) {
+          const t = top(a), y = Math.max(t, mf); mf = y + 13;
+          const w = [...k].length * 10 + 6;
+          small += `<i class="tl-ml" style="top:${t}px;height:${y - t}px;right:${w}px"></i><span class="tl-m" style="top:${y - 6}px" title="${esc(k)} ${yearLabel(Math.floor(a))}–${yearLabel(Math.floor(b))}">${esc(k)}</span>`;
+        }
+        floor = Math.max(floor, mf);
+        laneEnd = Math.max(laneEnd, floor);
         const allId = noteId(c, '');
         const grid = ticks.map(y => `<i class="tl-grid" style="top:${top(y)}px"></i>`).join('');
-        return `<div class="tl-lane"><button class="tl-lh${cls(allId)}" data-id="${esc(allId)}" aria-current="${allId === cur}">${c}<small>전체</small></button><div class="tl-track" style="height:${H}px">${grid}${small}${blocks}</div></div>`;
-      }).join('');
+        return `<div class="tl-lane"><button class="tl-lh${cls(allId)}" data-id="${esc(allId)}" aria-current="${allId === cur}">${c}<small>전체</small></button><div class="tl-track" style="height:__H__px">${grid}${small}${blocks}</div></div>`;
+      }).join('').replaceAll('__H__', Math.max(H, laneEnd + 12));
       chart = `<div class="tl-chart" style="--lanes:${era.lanes.length}">
-        <div class="tl-axis"><div class="tl-lh tl-lh-axis">연도</div><div class="tl-track" style="height:${H}px">${ticks.map(y => `<span style="top:${top(y)}px">${yearLabel(y)}</span>`).join('')}</div></div>
+        <div class="tl-axis"><div class="tl-lh tl-lh-axis">연도</div><div class="tl-track" style="height:${Math.max(H, laneEnd + 12)}px">${ticks.map(y => `<span style="top:${top(y)}px">${yearLabel(y)}</span>`).join('')}</div></div>
         ${lanes}
       </div>`;
     }
