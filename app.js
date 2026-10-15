@@ -980,11 +980,11 @@
       let laneEnd = 0;
       const lanes = era.lanes.map(([c, ks, minor]) => {
         // 정리노트 있는 왕(큰 칸)과 없는 왕(작은 이름표)을 재위 순서대로 한 줄에 쌓는다.
-        // 연도 높이는 대략만 맞고, 겹치면 아래로 밀어 순서가 한눈에 보이게 한다
+        // 겹치면 아래로 밀되 칸의 끝은 실제 퇴위 연도에 맞춰, 긴 재위를 지나면 다시 제 높이로 돌아온다(연표가 길어지지 않음)
         let floor = -Infinity, blocks = '', small = '';
         const all = [...ks.map(x => [x, true]), ...minor.map(x => [x, false])].sort((p, q) => p[0][1] - q[0][1] || q[1] - p[1]);
         for (const [[k, a, b, src], big] of all) {
-          const y = Math.max(top(a), floor), h = Math.max(top(b) - top(a), big ? MIN : 15);
+          const y = Math.max(top(a), floor), h = Math.max(top(b) - y, big ? MIN : 15);
           floor = y + h + (big ? 2 : 1);
           if (!big) { small += `<span class="tl-m" style="top:${y}px;height:${h}px" title="${esc(k)} ${yearLabel(Math.floor(a))}–${yearLabel(Math.floor(b))}">${esc(k)}</span>`; continue; }
           const id = noteId(src, k), other = src !== c;
