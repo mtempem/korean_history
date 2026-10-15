@@ -167,6 +167,13 @@ def main(src=os.path.join(SRC, 'explain'), answers_path=os.path.join(SRC, 'answe
     for fn in sorted(os.listdir(sum_dir)) if os.path.isdir(sum_dir) else []:
         if re.fullmatch(r'S\d+\.json', fn):
             summ.update(json.load(open(os.path.join(sum_dir, fn))))
+    # 정리노트 키를 필기 연표(app.js KINGS)의 이름에 맞춘다
+    SUM_ALIAS = {'일제강점기|1930년대': '일제강점기|1930년대 이후', '현대|허정': '현대|허정 과도 정부', '현대|장면': '현대|장면 내각'}
+    def sum_key(k):
+        if k in SUM_ALIAS: return SUM_ALIAS[k]
+        c, _, w = k.partition('|')
+        return k if c != '현대' or w in ('전체', '미군정') else f'{k} 정부'
+    summ = {sum_key(k): v for k, v in summ.items()}
     with open(os.path.join(ROOT, 'data', 'summary.js'), 'w') as f:
         f.write('HQ.sum=' + json.dumps(summ, ensure_ascii=False, separators=(',', ':')) + ';\n')
     print('\n'.join(report) or 'OK')
