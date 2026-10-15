@@ -979,22 +979,17 @@
       for (let y = Math.ceil(era.from / era.tick) * era.tick; y <= era.to; y += era.tick) ticks.push(y);
       let laneEnd = 0;
       const lanes = era.lanes.map(([c, ks, minor]) => {
-        // 큰 칸(정리노트 있는 왕)은 지금처럼 연도 위치에 쌓는다
-        let floor = -Infinity;
-        const blocks = ks.map(([k, a, b, src]) => {
-          const y = Math.max(top(a), floor), h = Math.max(top(b) - top(a), MIN);
-          floor = y + h + 2;
+        // 정리노트 있는 왕(큰 칸)과 없는 왕(작은 이름표)을 재위 순서대로 한 줄에 쌓는다.
+        // 연도 높이는 대략만 맞고, 겹치면 아래로 밀어 순서가 한눈에 보이게 한다
+        let floor = -Infinity, blocks = '', small = '';
+        const all = [...ks.map(x => [x, true]), ...minor.map(x => [x, false])].sort((p, q) => p[0][1] - q[0][1] || q[1] - p[1]);
+        for (const [[k, a, b, src], big] of all) {
+          const y = Math.max(top(a), floor), h = Math.max(top(b) - top(a), big ? MIN : 15);
+          floor = y + h + (big ? 2 : 1);
+          if (!big) { small += `<span class="tl-m" style="top:${y}px;height:${h}px" title="${esc(k)} ${yearLabel(Math.floor(a))}–${yearLabel(Math.floor(b))}">${esc(k)}</span>`; continue; }
           const id = noteId(src, k), other = src !== c;
-          return `<button class="tl-b${cls(id)}${other ? ' tl-x' : ''}" data-id="${esc(id)}" aria-current="${id === cur}" style="top:${y}px;height:${h}px" title="${other ? esc(src) + ' ' : ''}${esc(k)} ${yearLabel(a)}–${yearLabel(Math.floor(b))}"><b>${esc(k)}</b><small>${yearLabel(a)}</small></button>`;
-        }).join('');
-        // 작은 이름표(정리노트 없는 왕): 칸 오른쪽에 순서대로 두고, 실제 즉위 연도 자리에서 점선으로 이어 준다
-        let mf = -Infinity, small = '';
-        for (const [k, a, b] of minor.slice().sort((p, q) => p[1] - q[1])) {
-          const t = top(a), y = Math.max(t, mf); mf = y + 13;
-          const w = [...k].length * 10 + 6;
-          small += `<i class="tl-ml" style="top:${t}px;height:${y - t}px;right:${w}px"></i><span class="tl-m" style="top:${y - 6}px" title="${esc(k)} ${yearLabel(Math.floor(a))}–${yearLabel(Math.floor(b))}">${esc(k)}</span>`;
+          blocks += `<button class="tl-b${cls(id)}${other ? ' tl-x' : ''}" data-id="${esc(id)}" aria-current="${id === cur}" style="top:${y}px;height:${h}px" title="${other ? esc(src) + ' ' : ''}${esc(k)} ${yearLabel(a)}–${yearLabel(Math.floor(b))}"><b>${esc(k)}</b><small>${yearLabel(a)}</small></button>`;
         }
-        floor = Math.max(floor, mf);
         laneEnd = Math.max(laneEnd, floor);
         const allId = noteId(c, '');
         const grid = ticks.map(y => `<i class="tl-grid" style="top:${top(y)}px"></i>`).join('');
