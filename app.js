@@ -195,6 +195,8 @@
     // 이미지에 발문·배점이 함께 들어 있으므로, 이미지가 있으면 텍스트 발문은 생략
     let body = q.img ? '' : head;
     const gbtn = review ? '' : `<div class="qgrade-box"><button class="qgrade" title="${q.n}번 채점" aria-label="${q.n}번 채점"></button>${MARK}</div>`;
+    // 두 문항이 함께 보는 자료([47~48] 등)는 각 문항 위에 똑같이 보여 준다
+    if (q.sh) body += `<div class="qimg qshared"><img loading="lazy" width="${q.sw || ''}" height="${q.shh || ''}" src="${esc(imgSrc(q.sh))}" alt="[${esc(q.shr)}] 공통 자료"></div>`;
     if (q.img) body += `<div class="qimg"><img loading="lazy" width="${q.iw || ''}" height="${q.ih || ''}" src="${esc(imgSrc(q.img))}" alt="${q.n}번. ${esc(q.q)}">${gbtn}</div>`;
     else if (q.material) body += `<div class="clue" style="background:var(--bg)">${esc(q.material)}</div>`;
     if (q.src) body += `<div class="note">원본 문제지에 이 문항이 빠져 있어, 공개 기출 자료를 검색해 텍스트로 복원했습니다.</div>`;

@@ -134,6 +134,14 @@ def main(src=os.path.join(SRC, 'explain'), answers_path=os.path.join(SRC, 'answe
             }
             if out['img']:
                 out['iw'], out['ih'] = jpeg_size(os.path.join(ROOT, out['img']))
+            # [47~48]처럼 두 문항이 함께 보는 자료: img/회차/sAA-BB.jpg → 두 문항 모두에 붙인다
+            idir = os.path.join(ROOT, 'img', str(r))
+            for fn in sorted(os.listdir(idir)) if os.path.isdir(idir) else []:
+                m = re.fullmatch(r's(\d+)-(\d+)\.jpg', fn)
+                if m and int(m.group(1)) <= n <= int(m.group(2)):
+                    out['sh'] = f'img/{r}/{fn}'
+                    out['shr'] = f'{int(m.group(1))}~{int(m.group(2))}'
+                    out['sw'], out['shh'] = jpeg_size(os.path.join(idir, fn))
             for i, c in enumerate(out['choices']):
                 cid = f'{r}-{n}-{i + 1}'
                 if c.get('ph'):
